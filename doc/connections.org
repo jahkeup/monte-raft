@@ -1,0 +1,13 @@
+* Heartbeat
+
+  Leaders will request heartbeats from nodes. 
+  Nodes will respond. 
+
+* Leader Elections
+
+  The heartbeat port will also serve voting requests. 
+  Upon a "vote" message, a node will respond with a vote assuming it
+  has not already voted. If a node has already voted a vote will not
+  be cast, and send a "no-vote" message.
+ 
+  
