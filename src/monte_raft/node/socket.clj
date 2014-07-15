@@ -43,13 +43,21 @@
   (doto (zmq/socket context :sub)
     (zmq/connect leader-remote)))
 
+
+(defmacro with-zmq-timeout
+  "Use a timeout on the socket to make a request and then reset to
+  previous value"
+  [socket timeout & body]
+  `(let [socktimeout# (.getReceiveTimeOut ~socket)
+         _# (.setReceiveTimeOut ~socket ~timeout)
+         result# (do ~@body)
+         _# (.setReceiveTimeOut ~socket (int socktimeout#))]
+     result#))
+
 (defn receive-str-timeout
   "Receive string from socket with timeout using setsockopt to use
   timeout"
   [^ZMQ$Socket socket timeout]
-  (let [socktimeout (.getReceiveTimeOut socket)
-        _ (.setReceiveTimeOut socket timeout)
-        msg (zmq/receive-str socket)
-        _ (.setReceiveTimeOut socket (int socktimeout))]
-    (if msg msg nil)))
+  (with-zmq-timeout socket timeout
+    (zmq/receive-str socket)))
 
