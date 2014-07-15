@@ -1,6 +1,5 @@
 (ns monte-raft.node.messaging
-  (:require [monte-raft.node.socket :as socket]
-            [clojure.string :as s]
+  (:require [clojure.string :as s]
             [zeromq.zmq :as zmq]))
 
 (def ^:const command-pairs
@@ -32,9 +31,17 @@
     (if (valid-cmd? cmd)
       (rest (get-command-vec cmd)))))
 
-(defn valid-response [msg resp]
-  (if (valid-cmd? msg)
-    (let [cmd (to-command-fmt msg)]
-      (boolean (some #{resp} (responses-for cmd))))))
+(defn valid-response?
+  ([resp]
+     (let [resp (to-command-fmt resp)]
+       (boolean (some #{resp} (flatten (map #(rest %) command-pairs))))))
+  ([msg resp]
+     (if (valid-cmd? msg)
+       (let [cmd (to-command-fmt msg)
+             resp (to-command-fmt resp)]
+         (boolean (some #{resp} (responses-for cmd)))))))
 
+(defn command-to-str [cmd]
+  (if (or (valid-cmd? cmd) (valid-response? cmd))
+    (name cmd)))
 
