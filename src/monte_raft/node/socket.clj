@@ -17,7 +17,7 @@
 (def ^:dynamic state-sub-socket
   "Node - socket that listens for state changes. Will also receive " nil)
 
-(defn make-heartbeat-listener
+(defn make-control-listener
   "Make a heartbeat listener will use existing context and binding to
   connect. returns a socket (which *must* be closed by the utilizing
   side."

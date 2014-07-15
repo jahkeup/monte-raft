@@ -7,7 +7,7 @@
 (defonce context (zmq/context))
 
 (deftest test-socket-heartbeat
-  (with-open [listener (socket/make-heartbeat-listener context "inproc://heartbeat")
+  (with-open [listener (socket/make-control-listener context "inproc://heartbeat")
               requestor (socket/make-leader-connector context "inproc://heartbeat")]
     (let [msg "HEARTBEAT" response "PONG"]
                 (zmq/send-str requestor msg)
