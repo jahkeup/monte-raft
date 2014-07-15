@@ -1,7 +1,7 @@
 * Heartbeat
 
   Leaders will request heartbeats from nodes. 
-  Nodes will respond. 
+  Nodes will respond. See [[*Commands for control socket][commands]].
 
 * Leader Elections
 
@@ -9,5 +9,33 @@
   Upon a "vote" message, a node will respond with a vote assuming it
   has not already voted. If a node has already voted a vote will not
   be cast, and send a "no-vote" message.
- 
+  
+* Sockets
+  
+** Control socket (req->rep)
+   Used for commands
+
+*** Commands for control socket
+
+    | Command  | Response        | Description                                          |
+    |----------+-----------------+------------------------------------------------------|
+    | ELECT    | VOTE / NOVOTE   | Upon election, vote for electee (or novote if voted) |
+    | TERM [#] | UPDATED / Term# | Update current term or return current term           |
+    | CONFIRM  | CONFIRMED       | Confirm recieved state change                        |
+    | COMMIT   | COMMITTED       | Commit current confirmed state change                |
+    | FOLLOW   | FOLLOWING       | Update leader subscription                           |
+    | PING     | PONG            | Heartbeat response                                   |
+    | STATE    | <state object>  | Return current state object (string)                 |
+
+** State update pub/sub
+   State recieved here is placed in a separate atom for storage of
+   transient state. A command (confirm + commit) will be used to move
+   the transient state into the "permanent" state.
+
+
+   
+   
+
+
+
   
