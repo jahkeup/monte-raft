@@ -2,7 +2,20 @@
   (:require [zeromq.zmq :as zmq])
   (:import [org.zeromq ZMQ$Socket]))
 
-(defonce program-ctx (zmq/context))
+(defonce ctx (zmq/context))
+
+;; These should be bound in the context that they are being used, see
+;; docstring for purpose
+(def ^:dynamic node-control-socket
+  "Node - Control socket listening on node for control commands from
+  the leader")
+(def ^:dynamic control-socket
+  "Node - Control socket used by the leader for communicating with
+  cluster hosts.")
+(def ^:dynamic state-pub-socket
+  "Leader - socket for publishing any state changes")
+(def ^:dynamic state-sub-socket
+  "Node - socket that listens for state changes. Will also receive ")
 
 (defn make-heartbeat-listener
   "Make a heartbeat listener will use existing context and binding to
