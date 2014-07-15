@@ -26,6 +26,24 @@
    string. It will be the client's duty to update the JSON locally and
    retransmit. 
 
+*** Example:
+
+    This is the full state we'd like to be represented and have
+    consensus on:
+   #+BEGIN_SRC js
+// This is just JSON
+{
+"name1": "Jon",
+"name2": "Jake"
+}
+   #+END_SRC
+
+    #+BEGIN_SRC clojure
+;; which will turn into this in effect when being set:
+(reset! state "{\n\"name1\": \"Jon\",\n\"name2\": \"Jake\"\n}")
+    #+END_SRC
+    
+
    In a real world application, this would not be so and
    would probably provide an interface to work with keys directly and
    update values in a map using keywords and string values. This
