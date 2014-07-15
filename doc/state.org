@@ -1,0 +1,34 @@
+
+* State
+
+
+
+** Consensus
+   
+   - Definition: Agreement; accord; consent. (Webster 1913)
+
+   The purpose of the RAFT algorithm is to acheieve and maintain
+   consensus regarding /a/ value. That value could be a large data
+   structure or even an integer. In this case we have chosen a that
+   may represent more than just a string outside of the system (eg:
+   JSON encoded and decoded for use by client). How the system reaches
+   consensus is more detailed in the following section and moderately
+   detailed in [[file:connections.org][connections]].
+   
+
+** Representation
+   State is represented as a string, a replicated string. Fancy. This
+   string is in fact json and locally on nodes, the json will not be
+   converted and will simply be stored in an atom as is. Upon
+   receiving a state update, the /whole/ state should be transmitted
+   and converted. This significantly simplifies the nature of the
+   system as the only object being replicated is literally a
+   string. It will be the client's duty to update the JSON locally and
+   retransmit. 
+
+   In a real world application, this would not be so and
+   would probably provide an interface to work with keys directly and
+   update values in a map using keywords and string values. This
+   implementation is not meant to be a real world use case however,
+   our goal is to analyze and capture statistics regarding events that
+   occur within the system.

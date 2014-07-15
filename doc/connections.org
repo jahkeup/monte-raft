@@ -1,7 +1,12 @@
 * Heartbeat
 
   Leaders will request heartbeats from nodes. 
-  Nodes will respond. See [[*Commands for control socket][commands]].
+  Nodes will respond. See [[*Commands for control socket]]. Heartbeat must
+  occur within a timed limit on the receiving node's side with the
+  penalty of a new =TERM= and =ELECT= command. If the timer expires,
+  the node will cause a new term to begin and will effectively poison
+  the cluster with a =ELECT=, thus ending the current term and
+  beginning its "reign" (if elected).
 
 * Leader Elections
 
@@ -16,26 +21,34 @@
    Used for commands
 
 *** Commands for control socket
+    
+    Typically commands will be issued /only/ by Leaders, though some
+    of these may be issued by nodes (such as =TERM=, which can be used
+    as a query to determine the adjacent node's current =TERM=).
 
-    | Command  | Response        | Description                                          |
-    |----------+-----------------+------------------------------------------------------|
-    | ELECT    | VOTE / NOVOTE   | Upon election, vote for electee (or novote if voted) |
-    | TERM [#] | UPDATED / Term# | Update current term or return current term           |
-    | CONFIRM  | CONFIRMED       | Confirm recieved state change                        |
-    | COMMIT   | COMMITTED       | Commit current confirmed state change                |
-    | FOLLOW   | FOLLOWING       | Update leader subscription                           |
-    | PING     | PONG            | Heartbeat response                                   |
-    | STATE    | <state object>  | Return current state object (string)                 |
+    | Command    | Response          | Description                                          |
+    |------------+-------------------+------------------------------------------------------|
+    | =ELECT=    | =VOTE= / =NOVOTE= | Upon election, vote for electee (or novote if voted) |
+    | =TERM [#]= | =UPDATED= / Term# | Update current term or return current term           |
+    | =CONFIRM=  | =CONFIRMED=       | Confirm recieved state change                        |
+    | =COMMIT=   | =COMMITTED=       | Commit current confirmed state change                |
+    | =FOLLOW=   | =FOLLOWING=       | Update leader subscription                           |
+    | =PING=     | =PONG=            | Heartbeat response                                   |
+    | =STATE=    | <state object>    | Return current state object (string)                 |
 
 ** State update pub/sub
+
    State recieved here is placed in a separate atom for storage of
    transient state. A command (confirm + commit) will be used to move
    the transient state into the "permanent" state.
 
+   _No other communication_ will occur over the pub/sub sockets other
+   than state updates, with the exception of empty keepalive messages
+   (subscribers don't recieve the first message in some cases after
+   connecting). When subscribers pick up a message, that message (the
+   state string in this case) is placed into the transient
+   =next-state= atom for confirmation and committal (via commands on
+   the control socket).
 
    
-   
 
-
-
-  
