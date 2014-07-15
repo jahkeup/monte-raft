@@ -54,6 +54,12 @@
          _# (.setReceiveTimeOut ~socket (int socktimeout#))]
      result#))
 
+(defn send-str-timeout
+  "Send string with a timeout, will return true or false on send (from ZMQ$Socket#send)"
+  [^ZMQ$Socket socket timeout send-str]
+  (with-zmq-timeout socket timeout
+    (zmq/send-str send-str)))
+
 (defn receive-str-timeout
   "Receive string from socket with timeout using setsockopt to use
   timeout"
