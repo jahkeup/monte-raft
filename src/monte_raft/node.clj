@@ -3,25 +3,50 @@
             [monte-raft.node.messaging :as msgs]
             [monte-raft.node.handlers :as handlers]
             [monte-raft.node.state :as node-state]
-            [clojure.core.async :as async :refer [chan close! >! >!! <! <!! go go-loop]]))
+            [zeromq.zmq :as zmq]
+            [clojure.core.async :as async
+             :refer [chan close! >! >!! <! <!! go go-loop]]))
 
 (defn handle-message [msg]
   (if (msgs/valid-cmd? msg)
     (let [cmd (msgs/to-command-fmt msg)]
-      (if (contains? msgs/cmd-handlers )))))
+      (if (contains? handlers/cmd-handlers cmd)
+        (let [handler-func (get handlers/cmd-handlers cmd)]
+          (handler-func))))))
 
-(defn node-run [{:keys [term leader-change-chan dead-time] :as opts}]
+(defn elect!
+  "Force election, sends to all nodes."
+  []
+  (doall
+    (for [remote node-state/cluster]
+      (with-open [sock (zmq/socket socket/ctx :req)]
+        (zmq/connect sock remote)
+        (println "Sending!" :elect)
+        (socket/send-str-timeout sock socket/default-timeout :elect)))))
+
+(defn node-run
+  "Run a node task, must be given a map with the current term,
+  leader-change-chan (a channel to be communicated over on the event
+  of a leader change), and a dead-time after which the leader is
+  considered dead."
+  [{:keys [term leader-change-chan dead-time] :as
+  opts}]
   (loop [term-change false]
     (while (not term-change)
-      (if-let [cmd (msgs/to-command-fmt (socket/receive-str-timeout socket/control-socket dead-time))]))))
+      (if-let [msg (socket/receive-str-timeout socket/control-socket dead-time)]
+        (handle-message msg)))))
 
-(defmacro on-message-set [channel set-atom set-value]
+(defmacro on-message-reset!
+  "Upon recieving a message from channel, reset! the `set-atom' to
+  `set-value'. NOTE: This *must* be used in another
+  thread (preferrably a 'go' one)."
+  [channel set-atom set-value]
   `(do (<! ~channel)
       (reset! ~set-atom ~set-value)))
 
 (defn state-run [{:keys [update-socket stop-chan check-period]}]
   (let [should-stop (atom false)]
-    (go (on-message-set stop-chan should-stop true))
+    (go (on-message-reset! stop-chan should-stop true))
     (while (not should-stop)
       ;; Potential problems here in the future if the windows don't align..
       (if-let [new-state (socket/receive-str-timeout update-socket check-period)]
@@ -33,8 +58,10 @@
   'tcp://*:9001'"
   [node-id context binding]
   (binding [socket/node-control-socket (socket/make-control-listener context binding)
+            socket/ctx context
             node-state/state (atom nil)
-            node-state/transient-state (atom nil)]
+            node-state/transient-state (atom nil)
+            node-state/heartbeat-failure (atom false)]
     (loop [term (atom 0)]
       ;; We're going to block on receiving any leader-change
       ;; messages. Upon leader change we'll also want to reconnect to
