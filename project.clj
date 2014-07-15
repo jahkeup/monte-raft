@@ -8,4 +8,5 @@
                  [org.zeromq/jeromq "0.3.3"]
                  [org.zeromq/cljzmq "0.1.4" :exclusions [org.zeromq/jzmq]]
                  [org.clojure/tools.logging "0.3.0"]
-                 [org.clojure/data.json "0.2.5"]])
+                 [org.clojure/data.json "0.2.5"]
+                 [org.clojure/core.async "0.1.303.0-886421-alpha"]])
