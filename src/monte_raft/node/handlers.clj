@@ -1,7 +1,8 @@
 (ns monte-raft.node.handlers
   (:require [monte-raft.node.messaging :as msgs]
             [monte-raft.node.socket :as socket]
-            [monte-raft.node :as node]))
+            [monte-raft.node.state :as node-state]
+            [zeromq.zmq :as zmq]))
 
 
 (declare handle-hearbeat handle-term handle-confirm handle-commit
@@ -15,4 +16,6 @@
 
 (defn handle-heartbeat
   "Respond to a heartbeat message"
-  [])
+  []
+  (let [response (first (msgs/responses-for :ping))]
+    (zmq/send-str socket/control-socket)))
