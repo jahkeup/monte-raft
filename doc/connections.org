@@ -14,6 +14,13 @@
   Upon a "vote" message, a node will respond with a vote assuming it
   has not already voted. If a node has already voted a vote will not
   be cast, and send a "no-vote" message.
+
+** Election
+   
+   The election process in =monte-raft.node/elect!= will start other
+   threads and contact all nodes at once. Technically this will cause
+   the node to contact itself and start a new node process with the
+   new leader.
   
 * Sockets
   
