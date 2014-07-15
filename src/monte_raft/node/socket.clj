@@ -8,14 +8,14 @@
 ;; docstring for purpose
 (def ^:dynamic node-control-socket
   "Node - Control socket listening on node for control commands from
-  the leader")
+  the leader" nil)
 (def ^:dynamic control-socket
   "Node - Control socket used by the leader for communicating with
-  cluster hosts.")
+  cluster hosts." nil)
 (def ^:dynamic state-pub-socket
-  "Leader - socket for publishing any state changes")
+  "Leader - socket for publishing any state changes" nil)
 (def ^:dynamic state-sub-socket
-  "Node - socket that listens for state changes. Will also receive ")
+  "Node - socket that listens for state changes. Will also receive " nil)
 
 (defn make-heartbeat-listener
   "Make a heartbeat listener will use existing context and binding to
