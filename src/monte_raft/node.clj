@@ -21,7 +21,6 @@
     (for [remote node-state/cluster]
       (with-open [sock (zmq/socket socket/ctx :req)]
         (zmq/connect sock remote)
-        (println "Sending!" :elect)
         (socket/send-str-timeout sock socket/default-timeout :elect)))))
 
 (defn node-run
