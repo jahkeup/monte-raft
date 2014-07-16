@@ -68,6 +68,7 @@
             socket/ctx context
             node-state/state (atom nil)
             node-state/transient-state (atom nil)
+            node-state/confirmed (atom false)
             node-state/heartbeat-failure (atom false)]
     (loop [term (atom 0)]
       ;; We're going to block on receiving any leader-change
