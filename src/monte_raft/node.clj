@@ -9,12 +9,12 @@
 
 (defn handle-message
   "Inbound message dispatcher"
-  [msg]
+  [reply-socket msg]
   (if (msgs/valid-cmd? msg)
     (let [cmd (msgs/to-command-fmt msg)]
       (if (contains? handlers/cmd-handlers cmd)
         (let [handler-func (get handlers/cmd-handlers cmd)]
-          (handler-func))))))
+          (handler-func reply-socket))))))
 
 (defn elect!
   "Force election, sends to all nodes."
@@ -36,7 +36,7 @@
     (while (not term-change)
       (if-let [msg (socket/receive-str-timeout
                      socket/control-socket dead-time)]
-        (handle-message msg)))))
+        (handle-message socket/control-socket msg)))))
 
 (defmacro on-message-reset!
   "Upon recieving a message from channel, reset! the `set-atom' to

@@ -22,9 +22,9 @@
 (deftest test-handle-message
   (testing "Calls handler when matches message"
     (let [called? (atom false)
-          override-handlers {:ping #(reset! called? true)}]
+          override-handlers {:ping (fn [_] (reset! called? true))}]
       (with-redefs [handlers/cmd-handlers override-handlers]
-        (node/handle-message "ping")
+        (node/handle-message nil "ping")
         (is called?)))))
 
 (deftest test-on-message-reset!
