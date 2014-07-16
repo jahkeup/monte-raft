@@ -7,7 +7,9 @@
             [clojure.core.async :as async
              :refer [chan close! >! >!! <! <!! go go-loop]]))
 
-(defn handle-message [msg]
+(defn handle-message
+  "Inbound message dispatcher"
+  [msg]
   (if (msgs/valid-cmd? msg)
     (let [cmd (msgs/to-command-fmt msg)]
       (if (contains? handlers/cmd-handlers cmd)
@@ -32,24 +34,30 @@
   opts}]
   (loop [term-change false]
     (while (not term-change)
-      (if-let [msg (socket/receive-str-timeout socket/control-socket dead-time)]
+      (if-let [msg (socket/receive-str-timeout
+                     socket/control-socket dead-time)]
         (handle-message msg)))))
 
 (defmacro on-message-reset!
   "Upon recieving a message from channel, reset! the `set-atom' to
-  `set-value'. NOTE: This *must* be used in another
-  thread (preferrably a 'go' one)."
+  `set-value'. Non-blocking"
   [channel set-atom set-value]
-  `(do (<! ~channel)
-      (reset! ~set-atom ~set-value)))
+  `(go (do (<! ~channel)
+        (reset! ~set-atom ~set-value))))
 
-(defn state-run [{:keys [update-socket stop-chan check-period]}]
+(defn state-run
+  "Go thead designed to run in the background until a message is sent
+  over the stop-chan channel. "
+  [{:keys [update-socket stop-chan check-period]}]
   (let [should-stop (atom false)]
-    (go (on-message-reset! stop-chan should-stop true))
-    (while (not should-stop)
+    (on-message-reset! stop-chan should-stop true)
+    (while (not @should-stop)
       ;; Potential problems here in the future if the windows don't align..
-      (if-let [new-state (socket/receive-str-timeout update-socket check-period)]
-        (reset! node-state/transient-state new-state)))))
+      (if-let [new-state (socket/receive-str-timeout
+                           update-socket check-period)]
+        ;; Blindly set transient state to the received state.
+        (reset! node-state/transient-state new-state)))
+    :exiting))
 
 (defn node
   "Create a fully functional node, must provide a node-id, context,
