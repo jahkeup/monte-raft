@@ -1,0 +1,38 @@
+
+* Handlers
+
+** handle-ping
+   
+   Handles a =PING= command. Will simply respond with a =PONG=.
+
+** handle-elect
+   
+   Handles a =ELECT= command, will either gladly =VOTE= or send a =NOVOTE=
+   if =VOTE= has already been cast for this term.
+
+** handle-confirm
+   
+   Handles a =CONFIRM= command. If there's a transient state this will
+   simply reply with =CONFIRMED=. After a certain timeout the transient
+   state will be cleared. If the transient state atom is nil, the
+   response =RESEND= will be returned.
+
+** handle-commit
+   
+   Handles a =COMMIT= command. If there is a transient state, move that
+   into the more "persistent" and authoritative state atom. Upon
+   moving, the transient state will be cleared. Note: At this point
+   in time, if state is attempted to be updated during =CONFIRM= /
+   =COMMIT= cycle, the transient (uncommitted state) state will be
+   lost. If there is no transient a =RETRY= message will be returned.
+
+** handle-term
+   
+   Handles a =TERM= command. This command has two forms, the reporting
+   form and the 'set' form. =TERM= will return the current term. Where
+   =TERM 3= will set the current term on this node and respond with
+   =TERM-UPDATED=. This will cause the node to request the =STATE=
+   object from the leader and update accordingly via normal procedure.
+
+   
+

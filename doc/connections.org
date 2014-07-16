@@ -33,15 +33,14 @@
     of these may be issued by nodes (such as =TERM=, which can be used
     as a query to determine the adjacent node's current =TERM=).
 
-    | Command    | Response          | Description                                          |
-    |------------+-------------------+------------------------------------------------------|
-    | =ELECT=    | =VOTE= / =NOVOTE= | Upon election, vote for electee (or novote if voted) |
-    | =TERM [#]= | =UPDATED= / Term# | Update current term or return current term           |
-    | =CONFIRM=  | =CONFIRMED=       | Confirm recieved state change                        |
-    | =COMMIT=   | =COMMITTED=       | Commit current confirmed state change                |
-    | =FOLLOW=   | =FOLLOWING=       | Update leader subscription                           |
-    | =PING=     | =PONG=            | Heartbeat response                                   |
-    | =STATE=    | <state object>    | Return current state object (string)                 |
+    | Command    | Response               | Description                                          |
+    |------------+------------------------+------------------------------------------------------|
+    | =ELECT=    | =VOTE= / =NOVOTE=      | Upon election, vote for electee (or novote if voted) |
+    | =TERM [#]= | =TERM-UPDATED= / =Term#= | Update current term or return current term           |
+    | =CONFIRM=  | =CONFIRMED= / =RESEND= | Confirm recieved state change                        |
+    | =COMMIT=   | =COMMITTED= / =RETRY=  | Commit current confirmed state change                |
+    | =FOLLOW=   | =FOLLOWING=            | Update leader subscription                           |
+    | =PING=     | =PONG=                 | Heartbeat response                                   |
 
 ** State update pub/sub
 

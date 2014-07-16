@@ -1,1 +1,23 @@
 
+
+* Todo List
+
+** TODO Make handlers
+*** handle-ping
+    Nothing too special here.
+*** handle-confirm
+    Very straightforward, respond CONFIRMED if the transient is there.
+*** handle-commit
+    Very straightforward as well, simply update the =state= atom and
+    then respond. Will send =RETRY= if the state object seems to be missing.
+*** handle-elect
+    Need to figure out how the leader piece will interact with node
+    and define that more clearly before I go forward with this handler.
+*** handle-term
+    This will also need some more thought.
+
+** TODO Clear transient-state after a timeout
+
+** TODO Figure out leader "worker thread" calling and bindings.
+
+** TODO Consider another more flexible handler methodology

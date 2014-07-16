@@ -5,17 +5,25 @@
             [zeromq.zmq :as zmq]))
 
 
-(declare handle-hearbeat handle-term handle-confirm handle-commit
+(declare handle-ping handle-term handle-confirm handle-commit
   handle-elect)
 
 (def cmd-handlers "Command handler mapping"
-  {:ping handle-hearbeat
+  {:ping handle-ping
    :elect handle-elect
    :confirm handle-confirm
    :commit handle-commit})
 
-(defn handle-heartbeat
-  "Respond to a heartbeat message"
-  []
+(defn handle-ping
+  "Handle a PING command" []
   (let [response (first (msgs/responses-for :ping))]
-    (zmq/send-str socket/control-socket)))
+    (socket/send-str-timeout socket/control-socket socket/default-timeout)))
+
+(defn handle-elect
+  "Handle ELECT command" [])
+
+(defn handle-confirm
+  "Handle CONFIRM command" [])
+
+(defn handle-commit
+  "Handle COMMIT command" [])
