@@ -2,6 +2,10 @@
   (:require [monte-raft.node.macros :refer [until-message-from]]
             [monte-raft.node.socket :as socket]))
 
+(def ^:dynamic node-id
+  "The node identifier"
+  nil)
+
 (def ^:dynamic state
   "This is the state that the consensus is operating for." nil)
 
@@ -23,6 +27,9 @@
 
 (def ^:dynamic confirmed
   "Has the transient state been confirmed?" (atom false))
+
+(def ^:dynamic term
+  "The current term of the system" (atom 0))
 
 
 (defn state-worker
