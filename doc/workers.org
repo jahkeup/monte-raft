@@ -1,0 +1,32 @@
+
+* Workers
+
+** Node
+
+   The node worker is responsible for handling control messages. Each
+   process is assigned a =node-id= which is used to identify node
+   identity both internally and for external reasons. Internally the
+   node worker will receive messages from an leader worker (even if on
+   the same host). However, upon the event that the leader and node
+   worker /are/ on the same host, the node worker will respond as an
+   authoritative node via its control socket. All outbound commands
+   will still be issued through the leader worker. Essentially, the
+   node + leader combo is what makes any given node a leader.
+
+   Upon receiving an =ELECT= -> =FOLLOW= message, the node worker will
+   close down, setting some next-state variables and then respawning
+   itself to connect to the new host stopping and starting a new
+   state-run worker as well.
+
+*** state-run - State subscriber
+
+    This worker is a sub process of the node worker and is
+    automatically spawned upon node state. The process will be killed
+    via a signal over a message channel whenever a leader change
+    occurs.
+
+** Leader
+
+   A leader worker is started when a node is elected to become a
+   leader itself. Effectively, a node worker will always be present on
+   a system where a leader worker is running as well. 
