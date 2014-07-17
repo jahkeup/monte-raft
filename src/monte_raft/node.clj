@@ -2,7 +2,8 @@
   (:require [monte-raft.node.socket :as socket]
             [monte-raft.node.messaging :as msgs]
             [monte-raft.node.handlers :as handlers]
-            [monte-raft.node.state :as node-state]
+            [monte-raft.node.state :as node-state :refer [state-worker]]
+            [monte-raft.node.macros :refer [on-message-reset!]]
             [zeromq.zmq :as zmq]
             [clojure.core.async :as async
              :refer [chan close! >! >!! <! <!! go go-loop]]))
@@ -38,33 +39,18 @@
                      socket/control-socket dead-time)]
         (handle-message socket/control-socket msg)))))
 
-(defmacro on-message-reset!
-  "Upon recieving a message from channel, reset! the `set-atom' to
-  `set-value'. Non-blocking"
-  [channel set-atom set-value]
-  `(go (do (<! ~channel)
-        (reset! ~set-atom ~set-value))))
-
-(defn state-run
-  "Go thead designed to run in the background until a message is sent
-  over the stop-chan channel. "
-  [{:keys [update-socket stop-chan check-period]}]
-  (let [should-stop (atom false)]
-    (on-message-reset! stop-chan should-stop true)
-    (while (not @should-stop)
-      ;; Potential problems here in the future if the windows don't align..
-      (if-let [new-state (socket/receive-str-timeout
-                           update-socket check-period)]
-        ;; Blindly set transient state to the received state.
-        (reset! node-state/transient-state new-state)))
-    :exiting))
-
 (defn node
   "Create a fully functional node, must provide a node-id, context,
   and binding for the control socket (eg: 'ipc:///tmp/node-id.sock' or
-  'tcp://*:9001'"
-  [node-id context binding]
-  (binding [socket/node-control-socket (socket/make-control-listener context binding)
+  'tcp://*:9001'
+
+   node-id: the unique id of this host
+
+   context: the ZMQ context to be used
+
+   socket-binding: the address to listen on for control messages"
+  [node-id context socket-binding]
+  (binding [socket/node-control-socket (socket/make-control-listener context socket-binding)
             socket/ctx context
             node-state/state (atom nil)
             node-state/transient-state (atom nil)

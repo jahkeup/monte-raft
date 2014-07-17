@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [monte-raft.node.socket :as socket]
             [monte-raft.node :as node]
+            [monte-raft.node.macros :refer [on-message-reset!]]
             [monte-raft.node.messaging :as msgs]
             [monte-raft.node.handlers :as handlers]
             [monte-raft.node.state :as node-state]
@@ -31,7 +32,7 @@
   (testing "method should set value on channel message"
     (let [channel (chan)
           state-changed? (atom false)]
-      (node/on-message-reset! channel state-changed? true)
+      (on-message-reset! channel state-changed? true)
       (>!! channel "hi")
       (is state-changed?))))
 
@@ -49,7 +50,7 @@
         (binding [node-state/transient-state (atom nil)]
           ;; Start a state management "thread"
           (let [finished-chan
-                (go (node/state-run
+                (go (node-state/state-worker
                       {:update-socket state-update-sub
                        :stop-chan stop-chan
                        :check-period 1000}))]

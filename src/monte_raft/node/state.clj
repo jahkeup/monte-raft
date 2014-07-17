@@ -1,4 +1,6 @@
-(ns monte-raft.node.state)
+(ns monte-raft.node.state
+  (:require [monte-raft.node.macros :refer [on-message-reset!]]
+            [monte-raft.node.socket :as socket]))
 
 (def ^:dynamic state
   "This is the state that the consensus is operating for." nil)
@@ -21,6 +23,23 @@
 
 (def ^:dynamic confirmed
   "Has the transient state been confirmed?" (atom false))
+
+
+(defn state-worker
+  "Go thead designed to run in the background until a message is sent
+  over the stop-chan channel. "
+  [{:keys [update-socket stop-chan check-period]}]
+  (let [should-stop (atom false)]
+    (on-message-reset! stop-chan should-stop true)
+    (while (not @should-stop)
+      ;; Potential problems here in the future if the windows don't align..
+      (if-let [new-state (socket/receive-str-timeout
+                           update-socket check-period)]
+        ;; Blindly set transient state to the received state.
+        (reset! transient-state new-state)))
+    :exiting))
+
+
 
 (defn confirmable? "Is the current state confirmable?" []
   (not (nil? @transient-state)))
