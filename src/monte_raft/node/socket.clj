@@ -3,7 +3,7 @@
             [monte-raft.node.messaging :as msgs])
   (:import [org.zeromq ZMQ$Socket]))
 
-(defonce ctx (zmq/context))
+(def ctx (zmq/context))
 
 ;; These should be bound in the context that they are being used, see
 ;; docstring for purpose
@@ -24,27 +24,35 @@
   "Make a heartbeat listener will use existing context and binding to
   connect. returns a socket (which *must* be closed by the utilizing
   side."
-  [context binding]
-  (doto (zmq/socket context :rep)
-    (zmq/bind binding)))
+  ([binding]
+     (make-control-listener ctx binding))
+  ([context binding]
+     (doto (zmq/socket context :rep)
+       (zmq/bind binding))))
 
 (defn make-leader-connector
   "Make a heartbeat connector with context that connects to the remote"
-  [context remote]
-  (doto (zmq/socket context :req)
-    (zmq/connect remote)))
+  ([remote]
+     (make-leader-connector ctx remote))
+  ([context remote]
+     (doto (zmq/socket context :req)
+       (zmq/connect remote))))
 
 (defn make-state-update-publisher
   "Make a publisher socket for sending out state changes"
-  [context binding]
-  (doto (zmq/socket context :pub)
-    (zmq/bind binding)))
+  ([binding]
+     (make-state-update-publisher ctx binding))
+  ([context binding]
+     (doto (zmq/socket context :pub)
+       (zmq/bind binding))))
 
 (defn make-state-update-subscriber
   "Make a subscriber connection to the leader to recieve changes of state."
-  [context leader-remote]
-  (doto (zmq/socket context :sub)
-    (zmq/connect leader-remote)))
+  ([leader-remote]
+     (make-state-update-subscriber ctx leader-remote))
+  ([context leader-remote]
+     (doto (zmq/socket context :sub)
+       (zmq/connect leader-remote))))
 
 
 (defn or-default-timeout
