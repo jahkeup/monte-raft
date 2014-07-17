@@ -1,7 +1,7 @@
 (ns monte-raft.leader
   (:require [monte-raft.node.state :as node-state]
             [monte-raft.node.socket :as socket]
-            [monte-raft.node.macros :refer [on-message-reset!]]
+            [monte-raft.node.macros :refer [until-message-from]]
             [zeromq.zmq :as zmq]))
 
 (def ^:dynamic leader-id
@@ -17,10 +17,10 @@
   (and (not (nil? leader-id))
     (= other-node-id leader-id)))
 
-
-
 (defn leader-worker
   "Go thread used to manage the system. Establishes heartbeat
   messages, state consensus, and handles all client interactions. Node
   sub-worker"
-  [node-id context pub-binding term-chan])
+  [leader-id context pub-binding]
+  (until-message-from
+    ))
