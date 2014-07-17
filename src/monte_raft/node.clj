@@ -1,21 +1,13 @@
 (ns monte-raft.node
   (:require [monte-raft.node.socket :as socket]
             [monte-raft.node.messaging :as msgs]
-            [monte-raft.node.handlers :as handlers]
+            [monte-raft.node.control :as control :refer [control-worker]]
             [monte-raft.node.state :as node-state :refer [state-worker]]
+            [monte-raft.node.leader :as leader :refer [leader-worker]]
             [monte-raft.node.macros :refer [on-message-reset!]]
             [zeromq.zmq :as zmq]
             [clojure.core.async :as async
              :refer [chan close! >! >!! <! <!! go go-loop]]))
-
-(defn handle-message
-  "Inbound message dispatcher"
-  [reply-socket msg]
-  (if (msgs/valid-cmd? msg)
-    (let [cmd (msgs/to-command-fmt msg)]
-      (if (contains? handlers/cmd-handlers cmd)
-        (let [handler-func (get handlers/cmd-handlers cmd)]
-          (handler-func reply-socket))))))
 
 (defn elect!
   "Force election, sends to all nodes."
@@ -52,17 +44,11 @@
   [node-id context socket-binding]
   (binding [socket/node-control-socket (socket/make-control-listener context socket-binding)
             socket/ctx context
+            node-state/node-id node-id
             node-state/state (atom nil)
+            node-state/term (atom 0)
             node-state/transient-state (atom nil)
             node-state/confirmed (atom false)
-            node-state/heartbeat-failure (atom false)]
-    (loop [term (atom 0)]
-      ;; We're going to block on receiving any leader-change
-      ;; messages. Upon leader change we'll also want to reconnect to
-      ;; the leader properly.
-      (let [leader-change (chan)]
-        (node-run {:term term
-                   :leader-change-chan leader-change})
-        (swap! term inc)))))
+            node-state/heartbeat-failure (atom false)]))
 
 
