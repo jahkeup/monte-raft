@@ -7,6 +7,28 @@ pom.xml.asc
 *.class
 /.lein-*
 /.nrepl-port
+
+# Local documentation generation
 /doc/*.pdf
 /doc/*.tex
 /doc/*.aux
+
+# Emacs tmp/autosave/lock files
+.#*
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Intellij
+.idea/
+*.iml
+*.iws
+
+# Mac
+.DS_Store
+
+# Maven
+log/
+target/
