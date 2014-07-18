@@ -4,7 +4,7 @@
             [monte-raft.node.state :as node-state]
             [monte-raft.node.messaging :as msgs]
             [monte-raft.node.socket :as socket]
-            [monte-raft.node.worker-comm :refer :all]
+            [monte-raft.node.worker :as worker]
             [monte-raft.node.macros :refer [until-message-from]]))
 
 (defn handle-message
@@ -34,7 +34,7 @@
   term-chan: channel, when received on, will exit"
   [control-binding term-chan]
   (log/tracef "Starting control worker: listening on %s" control-binding)
-  (with-open [worker-comm-sock (make-worker-comm-sock)
+  (with-open [worker-comm-sock (worker/make-comm-sock)
               control-socket (socket/make-control-listener control-binding)]
     (binding [socket/control-socket control-socket]
       (log/trace "Beginning control worker loop")
@@ -44,7 +44,7 @@
       (log/trace "Control socket is preparing to exit.")
       (doall (for [w '(:leader :state)]
                (do (log/tracef "Sending worker '%s' kill message" (name w))
-                   (send-worker-message w :terminate)))))))
+                   (worker/send-message w :terminate)))))))
 
 ;; Okay this is working but the REPL isn't having it.
 ;;

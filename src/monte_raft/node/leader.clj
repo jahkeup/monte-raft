@@ -2,7 +2,7 @@
   (:require [monte-raft.node.state :as node-state]
             [monte-raft.node.socket :as socket]
             [monte-raft.node.macros :refer [until-message-from]]
-            [monte-raft.node.worker-comm :as comm]
+            [monte-raft.node.worker :as worker]
             [zeromq.zmq :as zmq]))
 
 (def ^:dynamic leader-id
@@ -25,7 +25,7 @@
   [leader-id context pub-binding]
   (with-open [state-publisher (doto (zmq/socket socket/ctx :pub)
                                 (zmq/bind pub-binding))]
-    (comm/until-worker-terminate :leader
+    (worker/until-worker-terminate :leader
       ()))
   :terminated)
 
