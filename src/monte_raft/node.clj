@@ -18,19 +18,6 @@
         (zmq/connect sock remote)
         (socket/send-str-timeout sock socket/default-timeout :elect)))))
 
-(defn node-run
-  "Run a node task, must be given a map with the current term,
-  leader-change-chan (a channel to be communicated over on the event
-  of a leader change), and a dead-time after which the leader is
-  considered dead."
-  [{:keys [term leader-change-chan dead-time] :as
-  opts}]
-  (loop [term-change false]
-    (while (not term-change)
-      (if-let [msg (socket/receive-str-timeout
-                     socket/control-socket dead-time)]
-        (handle-message socket/control-socket msg)))))
-
 (defn node
   "Create a fully functional node, must provide a node-id, context,
   and binding for the control socket (eg: 'ipc:///tmp/node-id.sock' or
@@ -41,14 +28,11 @@
    context: the ZMQ context to be used
 
    socket-binding: the address to listen on for control messages"
-  [node-id context socket-binding]
-  (binding [socket/node-control-socket (socket/make-control-listener context socket-binding)
-            socket/ctx context
-            node-state/node-id node-id
+  [node-id control-binding initial-leader]
+  (binding [node-state/node-id node-id
             node-state/state (atom nil)
             node-state/term (atom 0)
             node-state/transient-state (atom nil)
             node-state/confirmed (atom false)
-            node-state/heartbeat-failure (atom false)]))
-
-
+            node-state/heartbeat-failure (atom false)]
+    (go (control-worker control-binding))))
