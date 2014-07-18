@@ -1,5 +1,3 @@
-
-
 * Todo List
 
 ** TODO Make handlers
@@ -18,6 +16,37 @@
 
 ** TODO Clear transient-state after a timeout
 
-** TODO Figure out leader "worker thread" calling and bindings.
-
 ** TODO Consider another more flexible handler methodology
+
+** TODO Create Worker communication system
+
+*** Leader
+
+    Leader worker creates a leader connector (for heartbeat) and a
+    state publishing socket. 
+
+*** State
+    
+    State worker needs to be re-run each and every time there is a
+    leader change or term change (same as leader change)
+
+*** Control
+
+    This worker is the longer running worker and will /not/ be
+    affected by any changes in state.
+    
+    The control worker also will take control of negotiating the
+    changes in the current leader.
+
+** DONE Figure out leader "worker thread" calling and bindings.
+   CLOSED: [2014-07-17 Thu 17:32]
+   - Note taken on [2014-07-17 Thu 17:32] \\
+     Using a better more distinct worker layout
+
+* Potential issues
+
+** control-worker may receive requests while in the middle of a dialog
+   There is the potential for a dialog to be interrupted while talking
+   to a leader. If this occurs while replying the loop would be
+   blocked. May need to set a timeout somewhere.. (maybe send-str?)
+
