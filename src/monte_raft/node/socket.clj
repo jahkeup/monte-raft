@@ -73,17 +73,21 @@
 
 (defn send-str-timeout
   "Send string with a timeout, will return true or false on send (from ZMQ$Socket#send)"
-  [^ZMQ$Socket socket timeout send-str]
-  (with-zmq-timeout socket timeout
-    (if (or (msgs/valid-cmd? send-str) (msgs/valid-response? send-str))
-      (let [send-str (msgs/command-to-str send-str)]
-        (zmq/send-str socket send-str))
-      (zmq/send-str socket send-str))))
+  ([^ZMQ$Socket socket send-str]
+     (send-str-timeout socket default-timeout send-str))
+  ([^ZMQ$Socket socket timeout send-str]
+     (with-zmq-timeout socket timeout
+       (if (or (msgs/valid-cmd? send-str) (msgs/valid-response? send-str))
+         (let [send-str (msgs/command-to-str send-str)]
+           (zmq/send-str socket send-str))
+         (zmq/send-str socket send-str)))))
 
 (defn receive-str-timeout
   "Receive string from socket with timeout using setsockopt to use
   timeout"
-  [^ZMQ$Socket socket timeout]
-  (with-zmq-timeout socket timeout
-    (zmq/receive-str socket)))
+  ([^ZMQ$Socket socket]
+     (receive-str-timeout socket default-timeout))
+  ([^ZMQ$Socket socket timeout]
+     (with-zmq-timeout socket timeout
+       (zmq/receive-str socket))))
 
