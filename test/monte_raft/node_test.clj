@@ -20,22 +20,6 @@
          (is (= (socket/receive-str-timeout sock 3000)
                (msgs/command-to-str :elect))))))))
 
-(deftest test-handle-message
-  (testing "Calls handler when matches message"
-    (let [called? (atom false)
-          override-handlers {:ping (fn [_] (reset! called? true))}]
-      (with-redefs [handlers/cmd-handlers override-handlers]
-        (node/handle-message nil "ping")
-        (is called?)))))
-
-(deftest test-on-message-reset!
-  (testing "method should set value on channel message"
-    (let [channel (chan)
-          state-changed? (atom false)]
-      (on-message-reset! channel state-changed? true)
-      (>!! channel "hi")
-      (is state-changed?))))
-
 (deftest test-state-updates
   (testing "state-run should be updating transient-state on updates"
     (let [pub-remote "inproc://state-updates"
