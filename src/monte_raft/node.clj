@@ -1,22 +1,11 @@
 (ns monte-raft.node
-  (:require [monte-raft.node.socket :as socket]
-            [monte-raft.node.messaging :as msgs]
-            [monte-raft.node.control :as control :refer [control-worker]]
+  (:require [monte-raft.node.control :as control :refer [control-worker]]
             [monte-raft.node.state :as node-state :refer [state-worker]]
             [monte-raft.node.leader :as leader :refer [leader-worker]]
-            [monte-raft.node.macros :refer [on-message-reset!]]
+            [taoensso.timbre :as log]
             [zeromq.zmq :as zmq]
             [clojure.core.async :as async
              :refer [chan close! >! >!! <! <!! go go-loop]]))
-
-(defn elect!
-  "Force election, sends to all nodes."
-  []
-  (doall
-    (for [remote node-state/cluster]
-      (with-open [sock (zmq/socket socket/ctx :req)]
-        (zmq/connect sock remote)
-        (socket/send-str-timeout sock socket/default-timeout :elect)))))
 
 (defn node
   "Create a fully functional node, must provide a node-id, context,

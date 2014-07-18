@@ -10,13 +10,3 @@
             [clojure.data.json :as json]
             [clojure.core.async :as async :refer [go chan >!! <!!]]))
 
-(deftest test-elect!
-  (testing "opens new socket and connects to cluster nodes"
-    (let [fake-node "inproc://fake-node"]
-     (with-open [sock (doto (zmq/socket socket/ctx :rep)
-                        (zmq/bind fake-node))]
-       (binding [node-state/cluster [fake-node]]
-         (go (node/elect!))
-         (is (= (socket/receive-str-timeout sock 3000)
-               (msgs/command-to-str :elect))))))))
-
