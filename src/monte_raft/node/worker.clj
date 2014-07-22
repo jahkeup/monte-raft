@@ -18,13 +18,13 @@
      (make-comm-sock (comm-remote)))
   ([sock-binding]
      (doto (zmq/socket socket/ctx :pub)
-       (zmq/bind (comm-remote)))))
+       (zmq/bind sock-binding))))
 
 (defmacro until-worker-terminate
   "Loop until a message arrives on a subscribed worker socket"
   [worker-type & body]
   `(let [sock# (doto (zmq/socket socket/ctx :sub)
-                 (zmq/connect comm-remote))]
+                 (zmq/connect (comm-remote)))]
      (zmq/subscribe sock# (name ~worker-type))
      (until-receive-from sock# ~@body)))
 
@@ -35,6 +35,11 @@
   [worker-type msg]
   (zmq/send-str comm-sock
     (format "%s %s" (name worker-type) msg)))
+
+(defn signal-terminate
+  "Send a terminate message to subscribing worker-type"
+  [worker-type]
+  (send-message worker-type :terminate))
 
 (defmacro start
   "Start worker function, may do some worker tracking here in the
