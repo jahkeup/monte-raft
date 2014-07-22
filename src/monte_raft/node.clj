@@ -3,6 +3,7 @@
             [monte-raft.node.control-worker :refer [control-worker]]
             [monte-raft.node.state-worker :refer [state-worker]]
             [monte-raft.node.leader-worker :refer [leader-worker]]
+            [monte-raft.node.worker :as worker]
             [taoensso.timbre :as log]
             [zeromq.zmq :as zmq]
             [clojure.core.async :as async
@@ -27,4 +28,7 @@
             node-state/heartbeat-failure (atom false)]
     (log/debugf "Starting node %s" node-id)
     (log/debugf "will connect to %s as initial leader" initial-leader)
-    (go (control-worker control-binding))))
+    (let [running-worker (worker/start (control-worker control-binding))]
+      (<!! running-worker)
+      (log/info "Control has exited. Node shutting down."))
+    :terminated))
