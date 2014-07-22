@@ -1,5 +1,7 @@
 # monte-raft
 
+[![Build Status](https://travis-ci.org/jahkeup/monte-raft.svg)](https://travis-ci.org/jahkeup/monte-raft)
+
 This is *not* a RAFT reference, but in fact a basic implementation of
 the RAFT algorithm to establish some numbers for MATH430. Feel free to
 take a look around the codebase, but understand that it *is not* meant
