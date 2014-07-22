@@ -17,8 +17,7 @@
                                :terminated)
               received? (atom false)
               value-received (on-message-reset! running-worker received? true)]
-          (log/trace "Waiting for worker to run for a bit")
-          (Thread/sleep 10000)
+          (Thread/sleep 100)
           (worker/signal-terminate :test-worker)
           (Thread/sleep 50)
           (is received?)
