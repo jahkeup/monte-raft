@@ -5,7 +5,9 @@
             [monte-raft.node.messaging :as msgs]
             [monte-raft.node.socket :as socket]
             [monte-raft.node.worker :as worker]
-            [monte-raft.node.macros :refer [until-message-from]]))
+            [monte-raft.node.macros :refer [until-message-from]]
+            [monte-raft.node.leader-worker :as leader]
+            [monte-raft.node.state-worker :as state]))
 
 (defn handle-message
   "Inbound message dispatcher, msg should be raw message receieved
@@ -27,25 +29,31 @@
 
 (defn control-worker
   "Go thread control worker to process incoming messages, must be
-  started prior to other workers
+  started prior to other workers. Will listen for commands/leader
+  messages on 'control-binding'. Can be terminated with
+  (monte-raft.node.worker/signal-terminate :control)
 
-  control-binding: the binding of the control socket
-
-  term-chan: channel, when received on, will exit"
-  [control-binding term-chan]
+  NOTE: Right now, state publishing is hardcoded to inproc://state-updates"
+  [control-binding]
   (log/tracef "Starting control worker: listening on %s" control-binding)
-  (with-open [worker-comm-sock (worker/make-comm-sock)
-              control-socket (socket/make-control-listener control-binding)]
+  (with-open [control-socket (socket/make-control-listener control-binding)]
     (binding [socket/control-socket control-socket]
       (log/trace "Control worker started.")
-      (until-message-from term-chan
+      (if (leader/is-leader?)
+        (worker/start (leader/leader-worker
+                        leader/leader-id
+                        socket/ctx
+                        "inproc://state-updates")))
+      (worker/until-worker-terminate :control
         ;; Control loop
+        (log/info "Checking for messages..")
         (maybe-handle-message-from control-socket))
       (log/trace "Control socket is preparing to exit.")
       (doall (for [w '(:leader :state)]
                (do (log/tracef "Control worker sending '%s' kill message" (name w))
-                   (worker/send-message w :terminate))))
-      (log/trace "Control worker exiting."))))
+                   (worker/signal-terminate w))))
+      (log/trace "Control worker exiting.")
+      :terminated)))
 
 ;; Okay this is working but the REPL isn't having it.
 ;;

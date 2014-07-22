@@ -3,7 +3,8 @@
             [monte-raft.node.socket :as socket]
             [monte-raft.node.state :as node-state]
             [clojure.core.async :refer [go]]
-            [zeromq.zmq :as zmq]))
+            [zeromq.zmq :as zmq]
+            [taoensso.timbre :as log]))
 
 (def ^:dynamic comm-sock nil)
 
@@ -24,9 +25,18 @@
   "Loop until a message arrives on a subscribed worker socket"
   [worker-type & body]
   `(let [sock# (doto (zmq/socket socket/ctx :sub)
-                 (zmq/connect (comm-remote)))]
-     (zmq/subscribe sock# (name ~worker-type))
+                 (zmq/connect (comm-remote))
+                 (zmq/subscribe (name ~worker-type)))]
+     (log/tracef "Worker subscribing to '%s' for messages" (name ~worker-type))
      (until-receive-from sock# ~@body)))
+
+(defn comm-sock-logger [remote]
+  (with-open [sock (doto (zmq/socket socket/ctx :sub)
+                     (zmq/connect remote)
+                     (zmq/subscribe ""))]
+    (until-worker-terminate :logger
+      (if-let [recvd (socket/receive-str-timeout sock)]
+        (log/tracef "Worker bus message: '%s'" recvd)))))
 
 (defn send-message
   "Send targeted worker message, will send to all `worker-type'
@@ -39,6 +49,7 @@
 (defn signal-terminate
   "Send a terminate message to subscribing worker-type"
   [worker-type]
+  (log/tracef "Sending terminate for '%s' workers" (name worker-type))
   (send-message worker-type :terminate))
 
 (defmacro start
@@ -46,3 +57,4 @@
   future, for now its mostly a wrapper around go"
   [& worker-call]
   `(go ~@worker-call))
+

@@ -30,7 +30,8 @@
                                 (zmq/bind pub-binding))]
     (log/trace "Leader worker started.")
     (worker/until-worker-terminate :leader
-      ()))
+      (Thread/sleep 10)))
+  (log/trace "Leader exiting.")
   :terminated)
 
 

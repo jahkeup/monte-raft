@@ -1,4 +1,4 @@
-(ns monte-raft.node.state-test
+(ns monte-raft.node.state-worker-test
   (:require [clojure.test :refer :all]
             [monte-raft.node.socket :as socket]
             [monte-raft.node.macros :refer [on-message-reset!]]
