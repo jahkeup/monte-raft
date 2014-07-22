@@ -20,7 +20,7 @@
   received value and exit"
   [socket set-atom set-value]
   `(go (log/trace "Waiting for socket unlock message on socket")
-       (let [received#(zmq/receive-str ~socket)]
+       (let [received# (zmq/receive-str ~socket)]
          (log/trace "Received message on socket")
          (reset! ~set-atom ~set-value)
          received#)))
