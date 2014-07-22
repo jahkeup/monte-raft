@@ -1,7 +1,8 @@
 (ns monte-raft.node
-  (:require [monte-raft.node.control :as control :refer [control-worker]]
-            [monte-raft.node.state :as node-state :refer [state-worker]]
-            [monte-raft.node.leader :as leader :refer [leader-worker]]
+  (:require [monte-raft.node.state :as node-state]
+            [monte-raft.node.control-worker :refer [control-worker]]
+            [monte-raft.node.state-worker :refer [state-worker]]
+            [monte-raft.node.leader-worker :refer [leader-worker]]
             [taoensso.timbre :as log]
             [zeromq.zmq :as zmq]
             [clojure.core.async :as async
@@ -24,4 +25,6 @@
             node-state/transient-state (atom nil)
             node-state/confirmed (atom false)
             node-state/heartbeat-failure (atom false)]
+    (log/debugf "Starting node %s" node-id)
+    (log/debugf "will connect to %s as initial leader" initial-leader)
     (go (control-worker control-binding))))

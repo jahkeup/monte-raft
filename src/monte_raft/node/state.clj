@@ -31,19 +31,6 @@
 (def ^:dynamic term
   "The current term of the system" (atom 0))
 
-
-(defn state-worker
-  "Go thead designed to run in the background until a message is sent
-  over the stop-chan channel. "
-  [{:keys [update-socket stop-chan check-period]}]
-  (until-message-from stop-chan
-    ;; Potential problems here in the future if the windows don't align..
-    (if-let [new-state (socket/receive-str-timeout
-                         update-socket check-period)]
-      ;; Blindly set transient state to the received state.
-      (reset! transient-state new-state)))
-  :exiting)
-
 (defn confirmable? "Is the current state confirmable?" []
   (not (nil? @transient-state)))
 

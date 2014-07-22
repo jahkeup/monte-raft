@@ -1,4 +1,4 @@
-(ns monte-raft.node.control
+(ns monte-raft.node.control-worker
   (:require [taoensso.timbre :as log]
             [monte-raft.node.handlers :as handlers]
             [monte-raft.node.state :as node-state]
@@ -37,14 +37,15 @@
   (with-open [worker-comm-sock (worker/make-comm-sock)
               control-socket (socket/make-control-listener control-binding)]
     (binding [socket/control-socket control-socket]
-      (log/trace "Beginning control worker loop")
+      (log/trace "Control worker started.")
       (until-message-from term-chan
         ;; Control loop
         (maybe-handle-message-from control-socket))
       (log/trace "Control socket is preparing to exit.")
       (doall (for [w '(:leader :state)]
-               (do (log/tracef "Sending worker '%s' kill message" (name w))
-                   (worker/send-message w :terminate)))))))
+               (do (log/tracef "Control worker sending '%s' kill message" (name w))
+                   (worker/send-message w :terminate))))
+      (log/trace "Control worker exiting."))))
 
 ;; Okay this is working but the REPL isn't having it.
 ;;

@@ -3,7 +3,7 @@
             [zeromq.zmq :as zmq]
             [monte-raft.utils :refer :all]
             [monte-raft.node.socket :as socket]
-            [monte-raft.node.control :as control]
+            [monte-raft.node.control-worker :as control]
             [monte-raft.node.handlers :as handlers]))
 
 
