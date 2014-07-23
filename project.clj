@@ -5,6 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :plugins [[quickie "0.2.5"]]
   :dependencies [[org.clojure/clojure "1.6.0"]
+                 [org.clojure/tools.nrepl "0.2.3"]
                  [org.zeromq/jeromq "0.3.3"]
                  [org.zeromq/cljzmq "0.1.4" :exclusions [org.zeromq/jzmq]]
                  [org.clojure/data.json "0.2.5"]

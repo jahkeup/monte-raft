@@ -1,9 +1,20 @@
 (ns monte-raft.client
   (:require [clojure.data.json :as json]
             [zeromq.zmq :as zmq]
-            [monte-raft.node.socket :as socket]))
-;; Client interaction suite
+            [clojure.tools.nrepl.server :as nrepl]
+            [monte-raft.node.socket :as socket]
+            [taoensso.timbre :as log]))
 
+(def running-nrepl (atom nil))
+(def nrepl-comm (doto (zmq/socket socket/ctx :pub)
+                  (zmq/bind "inproc://nrepl-client")))
+
+(defn nrepl-comm-sub []
+  (doto (zmq/socket socket/ctx :pub)
+    (zmq/connect "inproc://nrepl-client")
+    (zmq/subscribe "")))
+
+;; Client interaction suite
 (def example-state "Simple internal representation of the state that
   will be maintained by the raft cluster"
   {:name "Jake" :class "MATH430"})
@@ -56,3 +67,19 @@
     (let [response (send-command client "GET")]
       (decode response))))
 
+(defn start-nrepl
+  "Start an nrepl server on port"
+  ([]
+     (start-nrepl (inc (zmq/first-free-port))))
+  ([port]
+     (if (not @running-nrepl)
+       (do
+         (log/infof "Starting nrepl server on localhost:%s" port)
+         (reset! running-nrepl (nrepl/start-server :port port))))))
+
+(defn stop-nrepl
+  "Stop an nrepl server"
+  []
+  (if @running-nrepl
+    (do (nrepl/stop-server @running-nrepl)
+        (reset! running-nrepl nil))))
