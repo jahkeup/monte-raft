@@ -15,8 +15,7 @@
 (deftest-node test-node-starts
   (let [running-node (worker/start
                        (node/node node-state/node-id
-                         (format "inproc://%s-control" node-state/node-id)
-                         node-state/node-id))]
+                         (node-state/make-node-options node-state/node-id)))]
     (wait-do 1000
       (worker/signal-terminate :control)
       (is (= (<!! running-node) :terminated)))))
