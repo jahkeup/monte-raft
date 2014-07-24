@@ -11,8 +11,8 @@
 
 (deftest-worker test-leader-starts
   (let [running-worker (worker/start
-                         (leader/leader-worker "node-leader" socket/ctx
-                          pub-binding))]
+                         (leader/leader-worker "node-leader" (assoc (node-config)
+                                                               :publish-binding pub-binding)))]
     (wait-do 100
-      (worker/signal-terminate :leader)
+      (worker/signal-terminate (get-in (node-config) [:kill-codes :leader]))
       (is (= (<!! running-worker) :terminated)))))

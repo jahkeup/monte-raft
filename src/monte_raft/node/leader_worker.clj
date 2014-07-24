@@ -23,13 +23,13 @@
   "Go thread used to manage the system. Establishes heartbeat
   messages, state consensus, and handles all client interactions. Node
   sub-worker"
-  [leader-id context pub-binding]
+  [leader-id {:keys [publish-binding kill-codes] :as worker-config}]
   (log/tracef "Starting leader '%s' sending state updates on '%s'."
-    leader-id pub-binding)
+    leader-id publish-binding)
   (with-open [state-publisher (doto (zmq/socket socket/ctx :pub)
-                                (zmq/bind pub-binding))]
+                                (zmq/bind publish-binding))]
     (log/trace "Leader worker started.")
-    (worker/until-worker-terminate :leader
+    (worker/until-worker-terminate (kill-codes :leader)
       (Thread/sleep 10)))
   (log/trace "Leader exiting.")
   :terminated)

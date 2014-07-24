@@ -43,8 +43,7 @@
     (if (leader/is-leader?)
       (worker/start (leader/leader-worker
                       leader/leader-id
-                      socket/ctx
-                      "inproc://state-updates")))
+                      worker-config)))
     (worker/until-worker-terminate (kill-codes :control)
       ;; Control loop
       (log/info "Checking for messages..")
