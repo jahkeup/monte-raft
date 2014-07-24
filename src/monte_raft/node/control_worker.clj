@@ -32,9 +32,9 @@
   "Go thread control worker to process incoming messages, must be
   started prior to other workers. Will listen for commands/leader
   messages on 'control-binding'. Can be terminated with
-  (monte-raft.node.worker/signal-terminate :control)
+  monte-raft.node.worker/signal-terminate, note: workers now listen on
+  a node-config'd kill-code, so use that."
 
-  NOTE: Right now, state publishing is hardcoded to inproc://state-updates"
   [{:keys [kill-codes publish-binding control-binding] :as worker-config}]
   (log/tracef "Starting control worker: listening on %s" control-binding)
   (with-open [control-socket (doto (zmq/socket socket/ctx :rep)
@@ -44,13 +44,22 @@
       (worker/start (leader/leader-worker
                       leader/leader-id
                       worker-config)))
+    (let [leader-remote (or (worker-config :leader-publish-remote)
+                          (leader/leader-remote))
+          state-worker-config (assoc worker-config :leader-publish-remote
+                                     leader-remote)]
+      (if leader-remote
+        (worker/start (state/state-worker
+                        state-worker-config))
+        (worker/log-error-throw
+          "Control cannot determine leader publishing remote or not given. ")))
     (worker/until-worker-terminate (kill-codes :control)
       ;; Control loop
-      (log/info "Checking for messages..")
       (maybe-handle-message-from control-socket))
     (log/trace "Control socket is preparing to exit.")
     (doall (for [w '(:leader :state)]
-             (do (log/tracef "Control worker sending '%s' kill message using %s" (name w) (kill-codes w))
+             (do (log/tracef "Control worker sending '%s' kill message using %s"
+                   (name w) (kill-codes w))
                  (worker/signal-terminate (kill-codes w)))))
     (log/trace "Control worker exiting.")
     :terminated))
