@@ -6,7 +6,7 @@
 (defn make-node-options
   "Create a working node config map based on the id"
   [id]
-  {:node-id (keyword id)
+  {:node-id (keyword (str id))
    :control-binding (format "inproc://node-%s-control" id)
    ;; Depending on timing conditions, zmq may like us to bind on a TCP
    ;; port here instead, otherwise subscribers may not subscribe to a
