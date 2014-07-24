@@ -21,11 +21,10 @@
         (is called?)))))
 
 (deftest-worker test-control-worker-starts
-  (with-messages-logged
-    (let [running-worker (worker/start
-                          (control/control-worker (node-config)))]
-     (wait-do 100
-       (worker/signal-terminate (get-in (node-config) [:kill-codes :control]))
-       (Thread/sleep 2000)
-       (worker/signal-terminate (get-in (node-config) [:kill-codes :control]))
-       (is (= (<!! running-worker) :terminated))))))
+  (let [running-worker (worker/start
+                         (control/control-worker (node-config)))]
+    (wait-do 100
+      (worker/signal-terminate (get-in (node-config) [:kill-codes :control]))
+      (Thread/sleep 2000)
+      (worker/signal-terminate (get-in (node-config) [:kill-codes :control]))
+      (is (= (<!! running-worker) :terminated)))))
