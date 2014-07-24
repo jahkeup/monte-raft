@@ -3,10 +3,15 @@
             [monte-raft.node.socket :as socket]
             [monte-raft.node.timer :as timer]))
 
-(defn make-node-options [id]
+(defn make-node-options
+  "Create a working node config map based on the id"
+  [id]
   {:control-binding (format "inproc://node-%s-control" id)
-   :leader-binding "inproc://system-leader"
-   :publish-binding "inproc://system-state-updates"
+   ;; Depending on timing conditions, zmq may like us to bind on a TCP
+   ;; port here instead, otherwise subscribers may not subscribe to a
+   ;; *real* bound socket.
+   :leader-binding (format "inproc://system-leader-L%s" id)
+   :publish-binding (format "inproc://system-state-updates-L%s" id)
    :timeout (timer/random-timeout 1000 2000)
    :kill-codes
    {:control (keyword (format "node-%s-control-worker" id))
