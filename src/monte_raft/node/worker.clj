@@ -8,6 +8,11 @@
 
 (def ^:dynamic comm-sock nil)
 
+(defmacro log-error-throw "Log an error and throw it"
+  [msg]
+  `(do (log/error ~msg)
+      (throw (Exception. ~msg))))
+
 (defn comm-remote
   "Generate the inproc control worker communication socket address
   based on the current binding of the node-id" []
@@ -48,9 +53,12 @@
 
 (defn signal-terminate
   "Send a terminate message to subscribing worker-type"
-  [worker-type]
-  (log/tracef "Sending terminate for '%s' workers" (name worker-type))
-  (send-message worker-type :terminate))
+  ([worker-type]
+     (log/tracef "Sending terminate for '%s' workers" (name worker-type))
+     (send-message worker-type :terminate))
+  ([worker-type worker-config]
+     (signal-terminate (get-in worker-config [:kill-codes worker-type]
+                         worker-type))))
 
 (defmacro start
   "Start worker function, may do some worker tracking here in the
