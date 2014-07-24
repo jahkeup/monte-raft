@@ -41,8 +41,9 @@
                                (zmq/bind control-binding))]
     (log/trace "Control worker started.")
     (if (leader/is-leader? worker-config)
-      (worker/start (leader/leader-worker
-                      worker-config)))
+      (do (worker/start (leader/leader-worker
+                       worker-config))
+          (Thread/sleep 10)))
     (if (leader/leader-remote worker-config)
       (worker/start (state/state-worker
                       worker-config))
