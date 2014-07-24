@@ -43,15 +43,11 @@
     (if (leader/is-leader? worker-config)
       (worker/start (leader/leader-worker
                       worker-config)))
-    (let [leader-remote (or (worker-config :leader-publish-remote)
-                          (leader/leader-remote))
-          state-worker-config (assoc worker-config :leader-publish-remote
-                                     leader-remote)]
-      (if leader-remote
-        (worker/start (state/state-worker
-                        state-worker-config))
-        (worker/log-error-throw
-          "Control cannot determine leader publishing remote or not given. ")))
+    (if (leader/leader-remote worker-config)
+      (worker/start (state/state-worker
+                      worker-config))
+      (worker/log-error-throw
+        "Control cannot determine leader publishing remote or not given. "))
     (worker/until-worker-terminate (kill-codes :control)
       ;; Control loop
       (maybe-handle-message-from control-socket))
@@ -63,14 +59,3 @@
     (log/trace "Control worker exiting.")
     :terminated))
 
-;; Okay this is working but the REPL isn't having it.
-;;
-;; (require '[clojure.core.async :as async])
-;; (def term-chan (async/chan))
-;; (reset! log/level-atom :trace)
-;; (log/trace "Running")
-;; (def running-worker (async/go (control-worker "inproc://control-socket"
-;;                                 term-chan)))
-;; (Thread/sleep 10000)
-;; (async/>!! term-chan true)
-;; (log/trace "Done")
