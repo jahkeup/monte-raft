@@ -6,12 +6,15 @@
             [monte-raft.node.macros :refer :all]
             [taoensso.timbre :as log]))
 
-
 (defmacro binding-with-node-id [node-id & body]
   `(binding [node-state/node-id ~node-id]
        (with-open [comm-sock# (worker/make-comm-sock)]
          (binding [worker/comm-sock comm-sock#]
-           ~@body))))
+           (with-redefs [node-state/cluster (atom (node-state/-make-node-cluster-map '(~node-id)))]
+             ~@body)))))
+
+(defn node-config []
+  (@node-state/cluster (keyword (format "node-%s" (name node-state/node-id)))))
 
 (defmacro deftest-worker
   "deftest for worker where bindings have already been made for
@@ -33,4 +36,5 @@
   [wait-time & body]
   `(do (Thread/sleep ~wait-time)
        ~@body))
+
 

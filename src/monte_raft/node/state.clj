@@ -2,21 +2,22 @@
   (:require [monte-raft.node.macros :refer [until-message-from]]
             [monte-raft.node.socket :as socket]))
 
-(defn make-node-options [num]
-  {:control-binding (format "inproc://node-%s-control" num)
+(defn make-node-options [id]
+  {:control-binding (format "inproc://node-%s-control" id)
    :leader-binding "inproc://system-leader"
    :publish-binding "inproc://system-state-updates"
    :kill-codes
-   {:control (keyword (format "node-%s-control-worker" num))
-    :leader (keyword (format "node-%s-leader-worker" num))
-    :state (keyword (format "node-%s-state-worker" num))}})
+   {:control (keyword (format "node-%s-control-worker" id))
+    :leader (keyword (format "node-%s-leader-worker" id))
+    :state (keyword (format "node-%s-state-worker" id))
+    :logger (keyword (format "node-%s-logger-worker" id))}})
 
 (defn -make-node-cluster-map
   "Generate a map of 1-x nodes (for use in cluster)"
-  [x]
+  [names]
   (reduce
     #(assoc %1 (keyword (format "node-%s" %2)) (make-node-options %2))
-    {} (range 1 (inc x))))
+    {} names))
 
 ;;
 ;; This algorithm is very stateful, make sure to bind these. In the
@@ -35,7 +36,7 @@
   "The in-between state that is pending confirmation and committal." nil)
 
 (def cluster "Cluster node addresses"
-  (atom (-make-node-cluster-map 3)))
+  (atom (-make-node-cluster-map (range 1 4))))
 
 (def ^:dynamic global-nodes-state
   "YES BAD BAD BAD, we're using this for statstics." (atom {}))
