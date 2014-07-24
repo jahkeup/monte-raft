@@ -40,15 +40,14 @@
     (let [expected-state {"name" "jake"}
           expected-encoded (json/write-str expected-state)
           worker-config (assoc (node-config)
-                          :leader-publish-remote ((node-config) :leader-binding))]
+                          :leader-publish-remote ((node-config) :publish-binding))]
       (with-open [update-pub (doto (zmq/socket socket/ctx :pub)
                                (zmq/bind ((node-config) :publish-binding)))]
         (binding [node-state/transient-state (atom nil)]
           (let [running-worker (worker/start
                                  (state/state-worker worker-config))]
-            (Thread/sleep 10000)
-            (publish-state update-pub expected-encoded)
             (wait-do 100
+              (publish-state update-pub expected-encoded)
               (worker/signal-terminate (get-in worker-config [:kill-codes :state]))
               (is (= (<!! running-worker) :terminated))
               (is (= @node-state/transient-state
