@@ -1,11 +1,13 @@
 (ns monte-raft.node.state
   (:require [monte-raft.node.macros :refer [until-message-from]]
-            [monte-raft.node.socket :as socket]))
+            [monte-raft.node.socket :as socket]
+            [monte-raft.node.timer :as timer]))
 
 (defn make-node-options [id]
   {:control-binding (format "inproc://node-%s-control" id)
    :leader-binding "inproc://system-leader"
    :publish-binding "inproc://system-state-updates"
+   :leader-timeout (timer/random-timeout 1000 2000)
    :kill-codes
    {:control (keyword (format "node-%s-control-worker" id))
     :leader (keyword (format "node-%s-leader-worker" id))
