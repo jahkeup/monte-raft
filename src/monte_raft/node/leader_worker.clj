@@ -4,7 +4,8 @@
             [monte-raft.node.macros :refer [until-message-from]]
             [monte-raft.node.worker :as worker]
             [taoensso.timbre :as log]
-            [zeromq.zmq :as zmq]))
+            [zeromq.zmq :as zmq]
+            [clojure.data.json :as json]))
 
 (def ^:dynamic leader-id
   "The node id of the current leader" nil)
@@ -18,6 +19,9 @@
   []
   (and (not (nil? leader-id))
     (= node-state/node-id leader-id)))
+
+(defn publish-state [publisher state-str]
+  (zmq/send-str publisher state-str))
 
 (defn leader-worker
   "Go thread used to manage the system. Establishes heartbeat
