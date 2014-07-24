@@ -7,7 +7,8 @@
             [monte-raft.node.control-worker :as control]
             [monte-raft.node.worker :as worker]
             [monte-raft.node.handlers :as handlers]
-            [monte-raft.test.worker-macros :refer :all]))
+            [monte-raft.test.worker-macros :refer :all]
+            [taoensso.timbre :as log]))
 
 (def control-binding "test node control socket binding" "inproc://test-node-control")
 
@@ -22,9 +23,9 @@
 (deftest-worker test-control-worker-starts
   (with-messages-logged
     (let [running-worker (worker/start
-                          (control/control-worker control-binding))]
+                          (control/control-worker (node-config)))]
      (wait-do 100
-       (worker/signal-terminate :control)
+       (worker/signal-terminate (get-in (node-config) [:kill-codes :control]))
        (Thread/sleep 2000)
-       (worker/signal-terminate :control)
+       (worker/signal-terminate (get-in (node-config) [:kill-codes :control]))
        (is (= (<!! running-worker) :terminated))))))

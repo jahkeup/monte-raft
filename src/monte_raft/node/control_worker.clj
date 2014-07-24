@@ -7,7 +7,8 @@
             [monte-raft.node.worker :as worker]
             [monte-raft.node.macros :refer [until-message-from]]
             [monte-raft.node.leader-worker :as leader]
-            [monte-raft.node.state-worker :as state]))
+            [monte-raft.node.state-worker :as state]
+            [zeromq.zmq :as zmq]))
 
 (defn handle-message
   "Inbound message dispatcher, msg should be raw message receieved
@@ -34,26 +35,26 @@
   (monte-raft.node.worker/signal-terminate :control)
 
   NOTE: Right now, state publishing is hardcoded to inproc://state-updates"
-  [control-binding]
+  [{:keys [kill-codes publish-binding control-binding] :as worker-config}]
   (log/tracef "Starting control worker: listening on %s" control-binding)
-  (with-open [control-socket (socket/make-control-listener control-binding)]
-    (binding [socket/control-socket control-socket]
-      (log/trace "Control worker started.")
-      (if (leader/is-leader?)
-        (worker/start (leader/leader-worker
-                        leader/leader-id
-                        socket/ctx
-                        "inproc://state-updates")))
-      (worker/until-worker-terminate :control
-        ;; Control loop
-        (log/info "Checking for messages..")
-        (maybe-handle-message-from control-socket))
-      (log/trace "Control socket is preparing to exit.")
-      (doall (for [w '(:leader :state)]
-               (do (log/tracef "Control worker sending '%s' kill message" (name w))
-                   (worker/signal-terminate w))))
-      (log/trace "Control worker exiting.")
-      :terminated)))
+  (with-open [control-socket (doto (zmq/socket socket/ctx :rep)
+                               (zmq/bind control-binding))]
+    (log/trace "Control worker started.")
+    (if (leader/is-leader?)
+      (worker/start (leader/leader-worker
+                      leader/leader-id
+                      socket/ctx
+                      "inproc://state-updates")))
+    (worker/until-worker-terminate (kill-codes :control)
+      ;; Control loop
+      (log/info "Checking for messages..")
+      (maybe-handle-message-from control-socket))
+    (log/trace "Control socket is preparing to exit.")
+    (doall (for [w '(:leader :state)]
+             (do (log/tracef "Control worker sending '%s' kill message using %s" (name w) (kill-codes w))
+                 (worker/signal-terminate (kill-codes w)))))
+    (log/trace "Control worker exiting.")
+    :terminated))
 
 ;; Okay this is working but the REPL isn't having it.
 ;;
