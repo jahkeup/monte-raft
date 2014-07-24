@@ -24,7 +24,7 @@
                                  (state/state-worker worker-config))]
             (wait-do 100
               (publish-state update-pub expected-encoded)
-              (worker/signal-terminate (get-in worker-config [:kill-codes :state]))
+              (worker/signal-terminate :state worker-config)
               (is (= (<!! running-worker) :terminated))
               (is (= @node-state/transient-state
                     expected-encoded)))))))))
