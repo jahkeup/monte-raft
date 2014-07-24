@@ -5,9 +5,9 @@
             [taoensso.timbre :as log]
             [zeromq.zmq :as zmq]))
 
-(defn maybe-get-update [subsocket]
+(defn maybe-get-update [subsocket timeout]
   (socket/receive-str-timeout
-    subsocket))
+    subsocket timeout))
 
 (defn state-worker
   "Go thead designed to run in the background until a message is sent
@@ -21,7 +21,7 @@
     (worker/until-worker-terminate (kill-codes :state)
       (log/trace "waiting for state update...")
       ;; Potential problems here in the future if the windows don't align..
-      (if-let [new-state (maybe-get-update update-socket)]
+      (if-let [new-state (maybe-get-update update-socket (worker-options :timeout))]
         (do (reset! node-state/transient-state new-state)
             (log/tracef "State updated: '%s'" new-state)))))
   (log/tracef "state-worker exiting.")

@@ -7,7 +7,7 @@
   {:control-binding (format "inproc://node-%s-control" id)
    :leader-binding "inproc://system-leader"
    :publish-binding "inproc://system-state-updates"
-   :leader-timeout (timer/random-timeout 1000 2000)
+   :timeout (timer/random-timeout 1000 2000)
    :kill-codes
    {:control (keyword (format "node-%s-control-worker" id))
     :leader (keyword (format "node-%s-leader-worker" id))
