@@ -10,9 +10,13 @@
 (def ^:dynamic leader-id
   "The node id of the current leader" nil)
 
-(def ^:dynamic leader-remote
-  "The leader's remote publishing address (connects directly for commands)"
-  nil)
+(defn leader-remote
+  ([]
+     (leader-remote leader-id))
+  ([id]
+     (let [leader-binding (get-in @node-state/cluster
+                            [(keyword id) :publish-binding])]
+       leader-binding)))
 
 (defn is-leader?
   "Is the other-node the same as the leader process?"
