@@ -10,12 +10,13 @@
             [monte-raft.node.state :as node-state]
             [zeromq.zmq :as zmq]
             [clojure.data.json :as json]
-            [clojure.core.async :as async :refer [go chan >!! <!!]]))
+            [clojure.core.async :as async :refer [go chan >!! <!!]]
+            [taoensso.timbre :as log]))
 
 (deftest-node test-node-starts
   (let [running-node (worker/start
                        (node/node node-state/node-id
-                         (node-state/make-node-options node-state/node-id)))]
+                         (node-config)))]
     (wait-do 1000
-      (worker/signal-terminate :control)
+      (worker/signal-terminate (get-in (node-config) [:kill-codes :control]))
       (is (= (<!! running-node) :terminated)))))

@@ -27,7 +27,7 @@
             node-state/transient-state (atom nil)
             node-state/confirmed (atom false)]
     (log/debugf "Starting node %s" node-id)
-    (let [running-worker (worker/start (control-worker control-binding))]
+    (let [running-worker (worker/start (control-worker opts))]
       (<!! running-worker)
       (log/info "Control has exited. Node shutting down."))
     :terminated))
