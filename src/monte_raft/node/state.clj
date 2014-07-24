@@ -44,7 +44,7 @@
   "The in-between state that is pending confirmation and committal." nil)
 
 (def cluster "Cluster node addresses"
-  (atom (-make-node-cluster-map (range 1 4))))
+  (atom (-make-node-cluster-map (map #(format "n%s" %1) (range 1 4)))))
 
 (def ^:dynamic global-nodes-state
   "YES BAD BAD BAD, we're using this for statstics." (atom {}))
