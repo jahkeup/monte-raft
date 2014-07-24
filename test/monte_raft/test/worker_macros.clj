@@ -6,22 +6,29 @@
             [monte-raft.node.macros :refer :all]
             [taoensso.timbre :as log]))
 
-(defmacro binding-with-node-id [node-id & body]
-  `(binding [node-state/node-id ~node-id]
-       (with-open [comm-sock# (worker/make-comm-sock)]
-         (binding [worker/comm-sock comm-sock#]
-           (with-redefs [node-state/cluster (atom (node-state/-make-node-cluster-map '(~node-id)))]
-             ~@body)))))
+(defmacro binding-with-default-cluster [node-id leader-id & body]
+  `(with-redefs
+    [node-state/cluster (atom (assoc-in (node-state/-make-node-cluster-map '(~node-id))
+                                [(keyword ~node-id) :leader-id] (keyword ~leader-id)))]
+             ~@body))
+
+(defmacro binding-with-node-id
+  [node-id leader-id & body]
+     `(binding [node-state/node-id ~node-id]
+        (with-open [comm-sock# (worker/make-comm-sock)]
+          (binding [worker/comm-sock comm-sock#]
+            (binding-with-default-cluster ~node-id ~leader-id
+              ~@body)))))
 
 (defn node-config []
-  (@node-state/cluster (keyword (format "node-%s" (name node-state/node-id)))))
+  (@node-state/cluster (keyword node-state/node-id)))
 
 (defmacro deftest-worker
   "deftest for worker where bindings have already been made for
   testing isolated worker(s)."
   [test-name & body]
   `(deftest ~test-name
-     (binding-with-node-id "test-node" ~@body)))
+     (binding-with-node-id "test-node" "test-node" ~@body)))
 
 (defalias deftest-node deftest-worker)
 

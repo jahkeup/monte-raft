@@ -7,22 +7,19 @@
             [zeromq.zmq :as zmq]
             [clojure.data.json :as json]))
 
-(def ^:dynamic leader-id
-  "The node id of the current leader" nil)
-
 (defn leader-remote
-  ([]
-     (leader-remote leader-id))
-  ([id]
-     (let [leader-binding (get-in @node-state/cluster
-                            [(keyword id) :publish-binding])]
-       leader-binding)))
+  "Get the leader remote based on the id or config object passed in."
+  [id-or-config]
+  (if-let [id (if (not (map? id-or-config)) id-or-config)]
+    (get-in @node-state/cluster [(keyword id) :publish-binding])
+    (let [config id-or-config
+          leader-id (:leader-id config)]
+      (get-in @node-state/cluster [leader-id :publish-binding]))))
 
 (defn is-leader?
   "Is the other-node the same as the leader process?"
-  []
-  (and (not (nil? leader-id))
-    (= node-state/node-id leader-id)))
+  [config-map]
+  (= (:leader-id config-map) (:node-id config-map)))
 
 (defn publish-state [publisher state-str]
   (zmq/send-str publisher state-str))
@@ -31,7 +28,7 @@
   "Go thread used to manage the system. Establishes heartbeat
   messages, state consensus, and handles all client interactions. Node
   sub-worker"
-  [leader-id {:keys [publish-binding kill-codes] :as worker-config}]
+  [{:keys [leader-id publish-binding kill-codes] :as worker-config}]
   (log/tracef "Starting leader '%s' sending state updates on '%s'."
     leader-id publish-binding)
   (with-open [state-publisher (doto (zmq/socket socket/ctx :pub)
@@ -41,5 +38,4 @@
       (Thread/sleep 10)))
   (log/trace "Leader exiting.")
   :terminated)
-
 

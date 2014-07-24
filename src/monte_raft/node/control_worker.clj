@@ -40,9 +40,8 @@
   (with-open [control-socket (doto (zmq/socket socket/ctx :rep)
                                (zmq/bind control-binding))]
     (log/trace "Control worker started.")
-    (if (leader/is-leader?)
+    (if (leader/is-leader? worker-config)
       (worker/start (leader/leader-worker
-                      leader/leader-id
                       worker-config)))
     (let [leader-remote (or (worker-config :leader-publish-remote)
                           (leader/leader-remote))

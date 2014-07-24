@@ -6,7 +6,8 @@
 (defn make-node-options
   "Create a working node config map based on the id"
   [id]
-  {:control-binding (format "inproc://node-%s-control" id)
+  {:node-id (keyword id)
+   :control-binding (format "inproc://node-%s-control" id)
    ;; Depending on timing conditions, zmq may like us to bind on a TCP
    ;; port here instead, otherwise subscribers may not subscribe to a
    ;; *real* bound socket.
@@ -23,7 +24,7 @@
   "Generate a map of 1-x nodes (for use in cluster)"
   [names]
   (reduce
-    #(assoc %1 (keyword (format "node-%s" %2)) (make-node-options %2))
+    #(assoc %1 (keyword %2) (make-node-options %2))
     {} names))
 
 ;;
