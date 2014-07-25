@@ -35,27 +35,29 @@
   monte-raft.node.worker/signal-terminate, note: workers now listen on
   a node-config'd kill-code, so use that."
 
-  [{:keys [kill-codes publish-binding control-binding] :as worker-config}]
-  (log/tracef "Starting control worker: listening on %s" control-binding)
+  [{:keys [node-id kill-codes publish-binding control-binding] :as worker-config}]
+  (log/tracef "Control worker (%s) starting with config: \n%s" node-id
+    (with-out-str (clojure.pprint/pprint worker-config)))
+  (log/tracef "Starting control worker (%s): listening on %s" node-id control-binding)
   (with-open [control-socket (doto (zmq/socket socket/ctx :rep)
                                (zmq/bind control-binding))]
     (log/trace "Control worker started.")
     (if (leader/is-leader? worker-config)
       (do (worker/start (leader/leader-worker
-                       worker-config))
+                          worker-config))
           (Thread/sleep 10)))
     (if (leader/leader-remote worker-config)
       (worker/start (state/state-worker
                       worker-config))
       (worker/log-error-throw
-        "Control cannot determine leader publishing remote or not given. "))
-    (worker/until-worker-terminate (kill-codes :control)
+        (format "Control worker (%s) cannot determine leader publishing remote or not given." node-id)))
+    (worker/until-worker-terminate worker-config :control
       ;; Control loop
       (maybe-handle-message-from control-socket))
     (log/trace "Control socket is preparing to exit.")
-    (doall (for [w '(:leader :state)]
-             (do (log/tracef "Control worker sending '%s' kill message using %s"
-                   (name w) (kill-codes w))
+    (doall (for [w '(:state :leader)]
+             (do (log/tracef "Control worker (%s) sending '%s' kill message using %s"
+                   node-id (name w) (kill-codes w))
                  (worker/signal-terminate (kill-codes w)))))
     (log/trace "Control worker exiting.")
     :terminated))
