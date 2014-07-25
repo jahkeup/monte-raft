@@ -18,18 +18,19 @@
 
    opts: node config option map, create with
   monte-raft.node.state/make-node-options"
-  [node-id {:keys [control-binding] :as opts}]
+  [{:keys [node-id control-binding] :as node-config}]
   (log/tracef "Spawning node '%s' using options: \n%s" node-id
-    (with-out-str (clojure.pprint/pprint opts)))
+    (with-out-str (clojure.pprint/pprint node-config)))
   (binding [node-state/node-id node-id
             node-state/state (atom nil)
             node-state/term (atom 0)
             node-state/transient-state (atom nil)
             node-state/confirmed (atom false)]
-    (log/debugf "Starting node %s" node-id)
-    (let [running-worker (worker/start (control-worker opts))]
-      (<!! running-worker)
-      (log/info "Control has exited. Node shutting down."))
+    (worker/with-comm-sock node-config
+      (log/debugf "Starting node %s" node-id)
+      (let [running-worker (worker/start (control-worker node-config))]
+        (<!! running-worker)
+        (log/info "Control has exited. Node shutting down.")))
     :terminated))
 
 (defn start-system
