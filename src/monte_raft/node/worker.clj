@@ -69,14 +69,14 @@
   (zmq/send-str comm-sock
     (format "%s %s" (name worker-type) msg)))
 
-(defn signal-terminate
+(defmacro signal-terminate
   "Send a terminate message to subscribing worker-type"
   ([worker-type]
-     (log/tracef "Sending terminate for '%s' workers" (name worker-type))
-     (send-message worker-type :terminate))
+     `(do (log/tracef "Sending terminate for '%s' workers" (name ~worker-type))
+          (send-message ~worker-type :terminate)))
   ([worker-type worker-config]
-     (signal-terminate (get-in worker-config [:kill-codes worker-type]
-                         worker-type))))
+     `(signal-terminate (get-in ~worker-config [:kill-codes ~worker-type]
+                          ~worker-type))))
 
 (defmacro start
   "Start worker function, may do some worker tracking here in the
