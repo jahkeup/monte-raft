@@ -7,16 +7,17 @@
             [monte-raft.node.macros :refer [on-message-reset!]]
             [taoensso.timbre :as log]))
 
-(binding [node-state/node-id "testing-node"]
-  (deftest-worker test-worker-termination
-    (let [running-worker (worker/start
-                           (worker/until-worker-terminate :test-worker
-                             (Thread/sleep 100))
-                           :terminated)
-          received? (atom false)
-          value-received (on-message-reset! running-worker received? true)]
-      (wait-do 100
-        (worker/signal-terminate :test-worker)
-        (wait-do 50
-          (is received?)
-          (is (= (<!! value-received) :terminated)))))))
+(deftest-worker test-worker-termination
+  (let [worker-config (assoc-in (node-config) [:kill-codes :test-worker] :test-worker)
+        running-worker (worker/start
+                         (worker/until-worker-terminate
+                           worker-config :test-worker
+                           (Thread/sleep 100))
+                         :terminated)
+        received? (atom false)
+        value-received (on-message-reset! running-worker received? true)]
+    (wait-do 100
+      (worker/signal-terminate :test-worker worker-config)
+      (wait-do 50
+        (is received?)
+        (is (= (<!! value-received) :terminated))))))
