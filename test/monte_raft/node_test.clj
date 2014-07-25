@@ -22,7 +22,8 @@
        (is (= (<!! running-node) :terminated))))))
 
 (deftest test-cluster-starts
-  (let [running-cluster (worker/start (node/start-system))]
-    (wait-do 3000
-      (node/stop-system))))
+  (worker/with-comm-sock {:node-id :cluster}
+    (let [running-cluster (worker/start (node/start-system))]
+      (wait-do 3000
+        (node/stop-system)))))
 
