@@ -13,14 +13,16 @@
 (defn state-worker
   "Go thead designed to run in the background until a message is sent
   over the stop-chan channel. "
-  [{:keys [kill-codes] :as worker-config}]
+  [{:keys [node-id] :as worker-config}]
   (log/infof "Starting state-worker on '%s'" node-state/node-id)
   (let [leader-publish-remote (leader/leader-remote worker-config)]
+    (log/tracef "State worker (%s) connecting to '%s' for updates."
+      node-id leader-publish-remote)
     (with-open [update-socket (doto (zmq/socket socket/ctx :sub)
                                 (zmq/connect leader-publish-remote)
                                 (zmq/subscribe ""))]
       (log/tracef "state-worker started and connected to '%s'." leader-publish-remote)
-      (worker/until-worker-terminate (kill-codes :state)
+      (worker/until-worker-terminate worker-config :state
         (log/trace "waiting for state update...")
         ;; Potential problems here in the future if the windows don't align..
         (if-let [new-state (maybe-get-update update-socket (worker-config :timeout))]
