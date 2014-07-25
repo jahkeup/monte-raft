@@ -38,10 +38,15 @@
   (client/start-nrepl)
   (doall
     (for [node-id (keys @node-state/cluster)]
-      (let [node-options (node-id @node-state/cluster)]
-        (worker/start (node node-id (:control-binding node-options)))
-        (until-receive-from (client/nrepl-comm-sub)
-          (Thread/sleep 1000))
-        (client/stop-nrepl)))))
+      (let [node-config (node-id @node-state/cluster)]
+        (worker/start (node node-config)))))
+  (until-receive-from (client/nrepl-comm-sub)
+    (Thread/sleep 1000))
+  (client/stop-nrepl))
 
+(defn stop-system
+  "Kill all nodes" []
+  (doall (for [node @node-state/cluster]
+           (do (clojure.pprint/pprint node)
+               (worker/signal-terminate (get-in (last node) [:kill-codes :control]))))))
 
