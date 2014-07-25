@@ -7,7 +7,7 @@
   "Create a working node config map based on the id"
   [id]
   {:node-id (keyword (str id))
-   :control-binding (format "inproc://node-%s-control" id)
+   :control-binding (format "inproc://%s-control" id)
    ;; Depending on timing conditions, zmq may like us to bind on a TCP
    ;; port here instead, otherwise subscribers may not subscribe to a
    ;; *real* bound socket.
@@ -15,10 +15,10 @@
    :publish-binding (format "inproc://system-state-updates-L%s" id)
    :timeout (timer/random-timeout 1000 2000)
    :kill-codes
-   {:control (keyword (format "node-%s-control-worker" id))
-    :leader (keyword (format "node-%s-leader-worker" id))
-    :state (keyword (format "node-%s-state-worker" id))
-    :logger (keyword (format "node-%s-logger-worker" id))}})
+   {:control (keyword (format "%s-control-worker" id))
+    :leader (keyword (format "%s-leader-worker" id))
+    :state (keyword (format "%s-state-worker" id))
+    :logger (keyword (format "%s-logger-worker" id))}})
 
 (defn -make-node-cluster-map
   "Generate a map of 1-x nodes (for use in cluster)"
