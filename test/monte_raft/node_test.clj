@@ -21,12 +21,3 @@
        (worker/signal-terminate (get-in (node-config) [:kill-codes :control]))
        (is (= (<!! running-node) :terminated))))))
 
-(deftest test-cluster-simple-start
-  (testing "Cluster basically* starts."
-   (worker/with-comm-sock {:node-id :cluster}
-     (let [running-cluster (worker/start (node/start-system))]
-       (wait-do 10000
-         (node/stop-system)
-         (wait-do 200
-           (is (= (<!! running-cluster) :system-terminated))))))))
-
