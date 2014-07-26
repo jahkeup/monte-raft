@@ -28,9 +28,9 @@
 (deftest test-handle-message
   (testing "Calls handler when matches message"
     (let [called? (atom false)
-          override-handlers {:ping (fn [_] (reset! called? true))}]
+          override-handlers {:ping (fn [_ _] (reset! called? true))}]
       (with-redefs [handlers/cmd-handlers override-handlers]
-        (control/handle-message nil "ping")
+        (control/handle-message nil "ping" {})
         (is called?)))))
 
 (deftest-worker test-control-worker-starts
@@ -59,11 +59,11 @@
           "Control should respond with a confirm if transient state is present"
           (reset! transient "some-state")
           (if-let [response (send-recv-timeout sock "CONFIRM")]
-            (is (= response "CONFIRMED"))))
+            (is (= (clojure.string/upper-case response) "CONFIRMED"))))
         (testing-clean-state state
           "Control should set current upon a COMMIT and respond"
           (let [response (send-recv-timeout sock "COMMIT")]
-            (is (= response "COMMITTED"))))))
+            (is (= (clojure.string/upper-case response) "COMMITTED"))))))
     (worker/signal-terminate :control worker-config)
     (<!! running-worker)
     (log/infof "Test subject has been shutdown.%s" bar)))
