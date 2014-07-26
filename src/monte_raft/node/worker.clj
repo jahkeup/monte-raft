@@ -44,7 +44,8 @@
 (defmacro with-comm-sock
   "Bind comm-sock and run"
   [node-config & body]
-  `(binding [last-bound-comm-sock (if @last-bound-comm-sock last-bound-comm-sock
+  `(binding [last-bound-comm-sock (if @last-bound-comm-sock
+                                    last-bound-comm-sock
                                       (atom nil))]
      (binding [comm-sock (make-comm-sock ~node-config)]
        (log/tracef "Last comm sock: '%s'" @last-bound-comm-sock)
