@@ -5,7 +5,8 @@
             [monte-raft.node.worker :as worker]
             [taoensso.timbre :as log]
             [zeromq.zmq :as zmq]
-            [clojure.data.json :as json]))
+            [clojure.data.json :as json]
+            [clojure.core.async :as async :refer [>!!]]))
 
 (defn leader-remote
   "Get the leader remote based on the id or config object passed in."
@@ -28,16 +29,20 @@
   "Go thread used to manage the system. Establishes heartbeat
   messages, state consensus, and handles all client interactions. Node
   sub-worker"
-  [{:keys [node-id leader-id publish-binding] :as worker-config}]
-  (log/tracef "Starting leader ('%s') sending state updates on '%s'."
-    leader-id publish-binding)
-  (try
-    (with-open [state-publisher (doto (zmq/socket socket/ctx :pub)
-                                 (zmq/bind publish-binding))]
-     (log/trace "Leader worker started.")
-     (worker/until-worker-terminate worker-config :leader
-       (Thread/sleep 10)))
-   (log/trace "Leader exiting.")
-   :terminated
-   (catch Throwable e (clojure.stacktrace/print-cause-trace))))
-
+  ([worker-config]
+     (leader-worker worker-config nil))
+  ([{:keys [node-id leader-id publish-binding] :as worker-config} started-chan]
+     (log/tracef "Starting leader ('%s') sending state updates on '%s'."
+       leader-id publish-binding)
+     (try
+       (with-open [state-publisher (doto (zmq/socket socket/ctx :pub)
+                                     (zmq/bind publish-binding))]
+         (log/trace "Leader worker started.")
+         (and started-chan (>!! started-chan :leader))
+         (worker/until-worker-terminate worker-config :leader
+           (Thread/sleep 10)))
+       (log/trace "Leader exiting.")
+       :terminated
+       (catch Throwable e (do (clojure.stacktrace/print-cause-trace e)
+                              (log/errorf "Leader (%s) encountered an error." node-id)
+                              (and started-chan (>!! started-chan :leader-fail)))))))

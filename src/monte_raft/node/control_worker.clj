@@ -8,6 +8,7 @@
             [monte-raft.node.macros :refer [until-message-from]]
             [monte-raft.node.leader-worker :as leader]
             [monte-raft.node.state-worker :as state]
+            [clojure.core.async :as async :refer [<!! >!! chan]]
             [zeromq.zmq :as zmq]))
 
 (defn handle-message
@@ -28,39 +29,54 @@
     (handle-message control-socket message)
     :timeout))
 
+(defn terminate-workers [{:keys [node-id kill-codes]}]
+  (doall (for [w '(:state :leader)]
+           (do (log/tracef "Control worker (%s) sending '%s' kill message using %s"
+                 node-id (name w) (kill-codes w))
+               (worker/signal-terminate (kill-codes w))))))
+
 (defn control-worker
   "Go thread control worker to process incoming messages, must be
   started prior to other workers. Will listen for commands/leader
   messages on 'control-binding'. Can be terminated with
   monte-raft.node.worker/signal-terminate, note: workers now listen on
   a node-config'd kill-code, so use that."
-
-  [{:keys [node-id kill-codes publish-binding control-binding] :as worker-config}]
-  (log/tracef "Control worker (%s) starting with config: \n%s" node-id
-    (with-out-str (clojure.pprint/pprint worker-config)))
-  (log/tracef "Starting control worker (%s): listening on %s" node-id control-binding)
-  (try
-    (with-open [control-socket (doto (zmq/socket socket/ctx :rep)
-                                 (zmq/bind control-binding))]
-      (log/trace "Control worker started.")
-      (if (leader/is-leader? worker-config)
-        (do (worker/start (leader/leader-worker
-                            worker-config))
-            (Thread/sleep 10)))
-      (if (leader/leader-remote worker-config)
-        (worker/start (state/state-worker
-                        worker-config))
-        (worker/log-error-throw
-          (format "Control worker (%s) cannot determine leader publishing remote or not given." node-id)))
-      (worker/until-worker-terminate worker-config :control
-        ;; Control loop
-        (maybe-handle-message-from control-socket))
-      (log/trace "Control socket is preparing to exit.")
-      (doall (for [w '(:state :leader)]
-               (do (log/tracef "Control worker (%s) sending '%s' kill message using %s"
-                     node-id (name w) (kill-codes w))
-                   (worker/signal-terminate (kill-codes w)))))
-      (log/trace "Control worker exiting.")
-      :terminated)
-    (catch Throwable e (clojure.stacktrace/print-cause-trace e))))
+  ([worker-config]
+     (control-worker worker-config nil))
+  ([{:keys [node-id kill-codes publish-binding control-binding] :as worker-config} started-chan]
+     (log/tracef "Control worker (%s) starting with config: \n%s" node-id
+       (with-out-str (clojure.pprint/pprint worker-config)))
+     (log/tracef "Starting control worker (%s): listening on %s" node-id control-binding)
+     (try
+       (let [worker-started-chan (chan 1)]
+         (with-open [control-socket (doto (zmq/socket socket/ctx :rep)
+                                      (zmq/bind control-binding))]
+           (log/trace "Control worker started.")
+           (if (leader/is-leader? worker-config)
+             (do (worker/start (leader/leader-worker worker-config
+                                 worker-started-chan))
+                 (log/debugf "Control (%s) is holding for leader.." node-id)
+                 (let [res (<!! worker-started-chan)]
+                   (if (= res :leader-fail)
+                     (throw (Exception. "Leader worker failed to start."))))))
+           (if (leader/leader-remote worker-config)
+             (do (worker/start (state/state-worker
+                                 worker-config worker-started-chan))
+                 (log/debugf "Control (%s) is holding for state.." node-id)
+                 (let [res (<!! worker-started-chan)]
+                   (if (= res :state-fail)
+                     (throw (Exception. "State worker failed to start.")))))
+             (worker/log-error-throw
+               (format "Control worker (%s) cannot determine leader publishing remote or not given." node-id)))
+           (and started-chan (>!! started-chan :control))
+           (worker/until-worker-terminate worker-config :control
+             ;; Control loop
+             (maybe-handle-message-from control-socket))
+           (log/trace "Control socket is preparing to exit.")))
+       (catch Throwable e (do (clojure.stacktrace/print-cause-trace e)
+                              (log/errorf "Control (%s) encountered a serious error." node-id)
+                              (and started-chan (>!! started-chan :control-fail))))
+       (finally (terminate-workers worker-config)))
+     (log/infof "Control worker (%s) exiting." node-id)
+     :terminated))
 
