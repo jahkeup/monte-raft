@@ -31,8 +31,9 @@
 
 (defalias deftest-node deftest-worker)
 
-(defmacro with-messages-logged [& body]
-  `(do (go (worker/comm-sock-logger (worker/comm-remote)))
+(defmacro with-messages-logged [worker-config & body]
+  `(do (go (worker/comm-sock-logger (worker/comm-remote ~worker-config)))
+       (log/tracef "!!!!!!! Bound worker-comm message logger. !!!!!!!!!")
        (let [res# (do ~@body)]
          (worker/signal-terminate :logger)
          res#)))
