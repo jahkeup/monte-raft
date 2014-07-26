@@ -59,7 +59,7 @@
       (log/infof "System starting.")
       (let [[leader-id cluster-nodes] (config-random-leader @node-state/cluster)]
         (log/infof "System selected '%s' as initial leader." leader-id)
-        (doall (for [node-id (take 1 (keys cluster-nodes))]
+        (doall (for [node-id (keys cluster-nodes)]
                  (let [node-config (node-id cluster-nodes)]
                    (log/infof "System starting node %s" node-id)
                    (save-worker! node-id (worker/start (node/node node-config)))))))
