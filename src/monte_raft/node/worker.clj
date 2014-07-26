@@ -9,6 +9,8 @@
 (def ^:dynamic comm-sock
   "Socket to be used for publishing worker messages" nil)
 
+(def last-bound-comm-sock (atom nil))
+
 (defmacro log-error-throw "Log an error and throw it"
   [msg]
   `(do (log/error ~msg)
@@ -18,20 +20,25 @@
   "Generate the inproc control worker communication socket address
   based on the current binding of the node-id (or pull from a
   node-config map passed"
-  [node-id]
-  (let [conn-string "inproc://%s-worker-comm"
-        conn-remote (cond
-                      (map? node-id) (format conn-string (name (:node-id node-id)))
-                      :default (format conn-string (name node-id)))]
-    conn-remote))
+  ([node-id]
+     (comm-remote node-id false))
+  ([node-id force]
+     (if (not (and (not force) comm-sock @last-bound-comm-sock))
+       (let [conn-string "inproc://%s-worker-comm"
+             conn-remote (cond
+                           (map? node-id) (format conn-string (name (:node-id node-id)))
+                           :default (format conn-string (name node-id)))]
+         conn-remote)
+       @last-bound-comm-sock)))
 
 (defn make-comm-sock
   "Create a worker communication socket, refuses to create double
   sockets. Useful for override a worker 'context'."
   [{:keys [node-id]}]
-     (if comm-sock comm-sock
-         (do (log/tracef "Worker creating new worker pub '%s'" (comm-remote node-id))
-           (doto (zmq/socket socket/ctx :pub)
+  (if comm-sock comm-sock
+      (do (log/tracef "Worker creating new worker pub '%s'" (comm-remote node-id))
+          (reset! last-bound-comm-sock (comm-remote node-id))
+          (doto (zmq/socket socket/ctx :pub)
             (zmq/bind (comm-remote node-id))))))
 
 (defmacro with-comm-sock
@@ -68,13 +75,13 @@
   cause remote worker to cease looping."
   [worker-type msg]
   (if (not comm-sock) (throw (Exception. "Worker communication socket has not been opened.")))
-  (if (and worker-type msg)
-    (try
+  (if (not (and worker-type msg))
+    (throw (Exception. "Cannot send empty message with empty worker-type")))
+  (try
       (zmq/send-str comm-sock
         (format "%s %s" (name worker-type) msg))
-      (catch Throwable e (do (clojure.stacktrace/print-stack-trace e)
-                             (throw e))))
-    (throw (Exception. "Cannot send empty message with empty worker-type"))))
+      (catch Throwable e (do (clojure.stacktrace/print-cause-trace e)
+                             (throw e)))))
 
 (defmacro signal-terminate
   "Send a terminate message to subscribing worker-type"
@@ -83,11 +90,14 @@
         (do (log/tracef "Sending terminate for '%s' workers" (name ~worker-type))
             (send-message ~worker-type :terminate))
         (catch Throwable e# (do (log/errorf "Error occurred during worker termination")
-                                (clojure.stacktrace/print-stack-trace e#)
+                                (clojure.stacktrace/print-cause-trace e#)
                                 (throw e#)))))
   ([worker-type worker-config]
-     `(signal-terminate (get-in ~worker-config [:kill-codes ~worker-type]
-                          ~worker-type))))
+     `(if-let [kill-code# (get-in ~worker-config [:kill-codes ~worker-type])]
+        (signal-terminate kill-code#)
+        (throw (Exception. (format "Cannot retrieve kill-code for %s from node config %s"
+                             ~worker-type
+                             (with-out-str (clojure.pprint/pprint ~worker-config))))))))
 
 (defmacro start
   "Start worker function, may do some worker tracking here in the
