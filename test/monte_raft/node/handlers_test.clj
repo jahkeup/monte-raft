@@ -13,7 +13,7 @@
           catcher (fn [s t msg] (if (= msg expected-msg)
                                   (reset! called? true)))]
       (with-redefs [socket/send-str-timeout catcher]
-        (handlers/handle-ping nil)
+        (handlers/handle-ping nil nil)
         (is @called?)))))
 
 (deftest-pending test-elect-handler

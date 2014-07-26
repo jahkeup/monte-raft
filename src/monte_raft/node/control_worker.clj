@@ -14,19 +14,19 @@
 (defn handle-message
   "Inbound message dispatcher, msg should be raw message receieved
   from remotes"
-  [reply-socket msg]
+  [reply-socket msg worker-config]
   (log/tracef "Handling message: '%s'" msg)
   (if (msgs/valid-cmd? msg)
     (let [cmd (msgs/to-command-fmt msg)]
       (if (contains? handlers/cmd-handlers cmd)
         (let [handler-func (get handlers/cmd-handlers cmd)]
-          (handler-func reply-socket))))))
+          (handler-func reply-socket worker-config))))))
 
 (defn maybe-handle-message-from
   "Handler delegation, dies on a timeout"
-  [control-socket]
+  [control-socket worker-config]
   (if-let [message (socket/receive-str-timeout control-socket)]
-    (handle-message control-socket message)
+    (handle-message control-socket message worker-config)
     :timeout))
 
 (defn terminate-workers [{:keys [node-id kill-codes]}]
@@ -70,8 +70,7 @@
                (format "Control worker (%s) cannot determine leader publishing remote or not given." node-id)))
            (and started-chan (>!! started-chan :control))
            (worker/until-worker-terminate worker-config :control
-             ;; Control loop
-             (maybe-handle-message-from control-socket))
+             (maybe-handle-message-from control-socket worker-config))
            (log/trace "Control socket is preparing to exit.")))
        (catch Throwable e (do (clojure.stacktrace/print-cause-trace e)
                               (log/errorf "Control (%s) encountered a serious error." node-id)
