@@ -27,7 +27,7 @@
                                      (zmq/subscribe ""))]
            (log/tracef "State worker (%s) started and connected to '%s'."
              node-id leader-publish-remote)
-           (>!! started-chan :state)
+           (and started-chan (>!! started-chan :state))
            (worker/until-worker-terminate worker-config :state
              (log/tracef "State worker (%s) waiting for state update..." node-id)
              ;; Potential problems here in the future if the windows don't align..
