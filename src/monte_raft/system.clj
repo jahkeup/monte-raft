@@ -27,15 +27,24 @@
   (let [rand-leader (:node-id (random-node cluster-map))]
     [rand-leader (set-leader cluster-map rand-leader)]))
 
+(defn pprint [& objs]
+  (if objs
+    (with-out-str
+      (doall (for [x objs]
+               (clojure.pprint/pprint x))))))
+
 (defn stop-system-nodes
   "Kill all nodes" []
   (log/trace "System terminating all nodes.")
   (doall (for [[node-id node-config] @node-state/cluster]
-           (worker/signal-terminate node-config :control))))
+           (if-let [node-worker (get node-config :running-worker)]
+             (do (log/tracef "Telling node to quit\n%s" (pprint node-config))
+                 (worker/signal-terminate :control node-config)
+                 (<!! node-worker))))))
 
 (defn save-worker! [node-id running-worker]
   (reset! node-state/cluster (assoc-in @node-state/cluster
-                               [:node-id :running-worker] running-worker)))
+                               [node-id :running-worker] running-worker)))
 
 (defn clean-worker! [node-id]
   (swap! node-state/cluster
