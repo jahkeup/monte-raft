@@ -10,8 +10,6 @@
             [monte-raft.test.worker-macros :refer :all]
             [taoensso.timbre :as log]))
 
-(def control-binding "test node control socket binding" "inproc://test-node-control")
-
 (deftest test-handle-message
   (testing "Calls handler when matches message"
     (let [called? (atom false)
