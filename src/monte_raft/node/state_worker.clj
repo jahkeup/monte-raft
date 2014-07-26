@@ -32,4 +32,4 @@
                 (log/tracef "State updated: '%s'" new-state))))))
     (log/tracef "state-worker exiting.")
     :terminated
-    (catch Throwable e (clojure.stacktrace/print-stack-trace e))))
+    (catch Throwable e (clojure.stacktrace/print-cause-trace e))))

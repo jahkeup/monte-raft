@@ -34,5 +34,5 @@
           (<!! running-worker)
           (log/infof "Control has exited. Node (%s) shutting down." node-id)))
       :terminated)
-    (catch Throwable e (clojure.stacktrace/print-stack-trace e))))
+    (catch Throwable e (clojure.stacktrace/print-cause-trace e))))
 

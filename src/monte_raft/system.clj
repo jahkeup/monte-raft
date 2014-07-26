@@ -58,7 +58,7 @@
         (with-out-str (clojure.pprint/pprint @node-state/cluster)))
       (worker/until-worker-terminate cluster-config :system
         (Thread/sleep 1000))
-      (catch Throwable e (clojure.stacktrace/print-stack-trace e))
+      (catch Throwable e (clojure.stacktrace/print-cause-trace e))
       (finally (do (stop-system-nodes)
                    (client/stop-nrepl)))))
   (log/infof "System exiting.")

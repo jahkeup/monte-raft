@@ -39,5 +39,5 @@
        (Thread/sleep 10)))
    (log/trace "Leader exiting.")
    :terminated
-   (catch Throwable e (clojure.stacktrace/print-stack-trace))))
+   (catch Throwable e (clojure.stacktrace/print-cause-trace))))
 
