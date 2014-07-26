@@ -68,9 +68,11 @@
   (with-open [sock (doto (zmq/socket socket/ctx :sub)
                      (zmq/connect remote)
                      (zmq/subscribe ""))]
-    (until-worker-terminate :logger
-      (if-let [recvd (socket/receive-str-timeout sock)]
-        (log/tracef "Worker bus message: '%s'" recvd)))))
+    (try
+      (until-worker-terminate {:kill-codes {:logger :logger}} :logger
+        (if-let [recvd (socket/receive-str-timeout sock)]
+          (log/tracef "Worker bus message: '%s'" recvd)))
+      (catch Throwable e (clojure.stacktrace/print-cause-trace e)))))
 
 (defn send-message
   "Send targeted worker message, will send to all `worker-type'
