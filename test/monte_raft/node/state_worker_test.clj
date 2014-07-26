@@ -19,12 +19,11 @@
                           :leader-publish-remote ((node-config) :publish-binding))]
       (with-open [update-pub (doto (zmq/socket socket/ctx :pub)
                                (zmq/bind ((node-config) :publish-binding)))]
-        (binding [node-state/transient-state (atom nil)]
-          (let [running-worker (worker/start
-                                 (state/state-worker worker-config))]
-            (wait-do 100
-              (publish-state update-pub expected-encoded)
-              (worker/signal-terminate :state worker-config)
-              (is (= (<!! running-worker) :terminated))
-              (is (= @node-state/transient-state
-                    expected-encoded)))))))))
+        (let [transient-state (get-in worker-config [:state :transient])
+              running-worker (worker/start
+                               (state/state-worker worker-config))]
+          (wait-do 100
+            (publish-state update-pub expected-encoded)
+            (worker/signal-terminate :state worker-config)
+            (is (= (<!! running-worker) :terminated))
+            (is (= @transient-state expected-encoded))))))))

@@ -16,10 +16,11 @@
   over the stop-chan channel. "
   ([worker-config]
      (state-worker worker-config nil))
-  ([{:keys [node-id] :as worker-config} started-chan]
+  ([{:keys [node-id state] :as worker-config} started-chan]
      (log/infof "Starting state-worker on '%s'" node-state/node-id)
      (try
-       (let [leader-publish-remote (leader/leader-remote worker-config)]
+       (let [leader-publish-remote (leader/leader-remote worker-config)
+             {:keys [transient]} state]
          (log/tracef "State worker (%s) connecting to '%s' for updates."
            node-id leader-publish-remote)
          (with-open [update-socket (doto (zmq/socket socket/ctx :sub)
@@ -32,7 +33,7 @@
              (log/tracef "State worker (%s) waiting for state update..." node-id)
              ;; Potential problems here in the future if the windows don't align..
              (if-let [new-state (maybe-get-update update-socket (worker-config :timeout))]
-               (do (reset! node-state/transient-state new-state)
+               (do (reset! transient new-state)
                    (log/tracef "State updated: '%s'" new-state))))))
        (log/tracef "state-worker exiting.")
        :terminated

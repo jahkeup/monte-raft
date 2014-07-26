@@ -19,7 +19,8 @@
    :state
    {:transient (atom nil)
     :current (atom nil)
-    :term (atom 0)}
+    :term (atom 0)
+    :confirmed (atom false)}
 
    :kill-codes
    {:control (keyword (format "%s-control-worker" id))
@@ -41,41 +42,28 @@
 ;; IE: Deprecated!
 ;;
 
-
 (def ^:dynamic node-id
   "The node identifier"
   nil)
 
-(def ^:dynamic state
-  "This is the state that the consensus is operating for." nil)
-
-(def ^:dynamic transient-state
-  "The in-between state that is pending confirmation and committal." nil)
-
 (def cluster "Cluster node addresses"
   (atom (-make-node-cluster-map (map #(format "n%s" %1) (range 1 4)))))
 
-(def ^:dynamic global-nodes-state
-  "YES BAD BAD BAD, we're using this for statstics." (atom {}))
+(defn confirmable? "Is the current state confirmable?"
+  [{:keys [transient current] :as state}]
+  (not (nil? @transient)))
 
-(def ^:dynamic confirmed
-  "Has the transient state been confirmed?" nil)
-
-(def ^:dynamic term
-  "The current term of the system" nil)
-
-(defn confirmable? "Is the current state confirmable?" []
-  (not (nil? @transient-state)))
-
-(defn confirmed! "Mark transient state confirmed" []
+(defn confirmed! "Mark transient state confirmed"
+  [{:keys [confirmed] :as state}]
   (reset! confirmed true))
 
-(defn confirmed? "Has the current transient state been confirmed?" []
+(defn confirmed? "Has the current transient state been confirmed?"
+  [{:keys [confirmed] :as state}]
   (true? @confirmed))
 
 (defn commit!
   "Terminate state chain, update state and clear transient and
-  confirmation flag" []
-  (reset! state @transient-state)
+  confirmation flag" [{:keys [transient confirmed current] :as state}]
+  (reset! current @transient)
   (reset! confirmed false)
-  (reset! transient-state nil))
+  (reset! transient nil))

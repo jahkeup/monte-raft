@@ -23,16 +23,11 @@
   (log/tracef "Spawning node '%s' using options: \n%s" node-id
     (with-out-str (clojure.pprint/pprint node-config)))
   (try
-    (binding [node-state/node-id node-id
-              node-state/state (atom nil)
-              node-state/term (atom 0)
-              node-state/transient-state (atom nil)
-              node-state/confirmed (atom false)]
-      (worker/with-comm-sock node-config
-        (log/debugf "Starting node %s" node-id)
-        (let [running-worker (worker/start (control-worker node-config))]
-          (<!! running-worker)
-          (log/infof "Control has exited. Node (%s) shutting down." node-id)))
-      :terminated)
+    (worker/with-comm-sock node-config
+      (log/debugf "Starting node %s" node-id)
+      (let [running-worker (worker/start (control-worker node-config))]
+        (<!! running-worker)
+        (log/infof "Control has exited. Node (%s) shutting down." node-id)))
+    :terminated
     (catch Throwable e (clojure.stacktrace/print-cause-trace e))))
 
