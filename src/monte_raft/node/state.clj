@@ -14,6 +14,13 @@
    :leader-binding (format "inproc://system-leader-L%s" id)
    :publish-binding (format "inproc://system-state-updates-L%s" id)
    :timeout (timer/random-timeout 1000 2000)
+
+   ;; Node state objects.
+   :state
+   {:transient (atom nil)
+    :current (atom nil)
+    :term (atom 0)}
+
    :kill-codes
    {:control (keyword (format "%s-control-worker" id))
     :leader (keyword (format "%s-leader-worker" id))
@@ -28,10 +35,12 @@
     {} names))
 
 ;;
-;; This algorithm is very stateful, make sure to bind these. In the
-;; future these should be moved into the function arguments, but for
-;; the time being bind in the main node function and go.
+;; Many of these variables will come from the node's config map
+;; instead, but are left until everything has been converted.
 ;;
+;; IE: Deprecated!
+;;
+
 
 (def ^:dynamic node-id
   "The node identifier"
