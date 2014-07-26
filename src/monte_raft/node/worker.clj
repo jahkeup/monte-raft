@@ -9,7 +9,7 @@
 (def ^:dynamic comm-sock
   "Socket to be used for publishing worker messages" nil)
 
-(def last-bound-comm-sock (atom nil))
+(def ^:dynamic last-bound-comm-sock (atom nil))
 
 (defmacro log-error-throw "Log an error and throw it"
   [msg]
@@ -44,8 +44,11 @@
 (defmacro with-comm-sock
   "Bind comm-sock and run"
   [node-config & body]
-  `(binding [comm-sock (make-comm-sock ~node-config)]
-     ~@body))
+  `(binding [last-bound-comm-sock (if @last-bound-comm-sock last-bound-comm-sock
+                                      (atom nil))]
+     (binding [comm-sock (make-comm-sock ~node-config)]
+       (log/tracef "Last comm sock: '%s'" @last-bound-comm-sock)
+       ~@body)))
 
 (defmacro until-worker-terminate
   "Loop until a message arrives on a subscribed worker socket"
