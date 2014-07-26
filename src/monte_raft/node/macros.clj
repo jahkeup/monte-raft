@@ -10,7 +10,7 @@
   [channel set-atom set-value]
   `(go (log/trace "Waiting for channel unlock message")
        (let [received# (<! ~channel)]
-         (log/trace "Received unlock message")
+         (log/tracef "Received unlock message: '%s'" received#)
          (reset! ~set-atom ~set-value)
          received#)))
 
@@ -21,7 +21,7 @@
   [socket set-atom set-value]
   `(go (log/trace "Waiting for socket unlock message on socket")
        (let [received# (zmq/receive-str ~socket)]
-         (log/trace "Received message on socket")
+         (log/tracef "Received message on socket: '%s'" received#)
          (reset! ~set-atom ~set-value)
          received#)))
 
