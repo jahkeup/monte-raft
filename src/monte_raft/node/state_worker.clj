@@ -15,18 +15,21 @@
   over the stop-chan channel. "
   [{:keys [node-id] :as worker-config}]
   (log/infof "Starting state-worker on '%s'" node-state/node-id)
-  (let [leader-publish-remote (leader/leader-remote worker-config)]
-    (log/tracef "State worker (%s) connecting to '%s' for updates."
-      node-id leader-publish-remote)
-    (with-open [update-socket (doto (zmq/socket socket/ctx :sub)
-                                (zmq/connect leader-publish-remote)
-                                (zmq/subscribe ""))]
-      (log/tracef "state-worker started and connected to '%s'." leader-publish-remote)
-      (worker/until-worker-terminate worker-config :state
-        (log/trace "waiting for state update...")
-        ;; Potential problems here in the future if the windows don't align..
-        (if-let [new-state (maybe-get-update update-socket (worker-config :timeout))]
-          (do (reset! node-state/transient-state new-state)
-              (log/tracef "State updated: '%s'" new-state))))))
-  (log/tracef "state-worker exiting.")
-  :terminated)
+  (try
+    (let [leader-publish-remote (leader/leader-remote worker-config)]
+      (log/tracef "State worker (%s) connecting to '%s' for updates."
+        node-id leader-publish-remote)
+      (with-open [update-socket (doto (zmq/socket socket/ctx :sub)
+                                  (zmq/connect leader-publish-remote)
+                                  (zmq/subscribe ""))]
+        (log/tracef "State worker (%s) started and connected to '%s'."
+          node-id leader-publish-remote)
+        (worker/until-worker-terminate worker-config :state
+          (log/tracef "State worker (%s) waiting for state update..." node-id)
+          ;; Potential problems here in the future if the windows don't align..
+          (if-let [new-state (maybe-get-update update-socket (worker-config :timeout))]
+            (do (reset! node-state/transient-state new-state)
+                (log/tracef "State updated: '%s'" new-state))))))
+    (log/tracef "state-worker exiting.")
+    :terminated
+    (catch Throwable e (clojure.stacktrace/print-stack-trace e))))

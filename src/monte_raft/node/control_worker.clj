@@ -39,26 +39,28 @@
   (log/tracef "Control worker (%s) starting with config: \n%s" node-id
     (with-out-str (clojure.pprint/pprint worker-config)))
   (log/tracef "Starting control worker (%s): listening on %s" node-id control-binding)
-  (with-open [control-socket (doto (zmq/socket socket/ctx :rep)
-                               (zmq/bind control-binding))]
-    (log/trace "Control worker started.")
-    (if (leader/is-leader? worker-config)
-      (do (worker/start (leader/leader-worker
-                          worker-config))
-          (Thread/sleep 10)))
-    (if (leader/leader-remote worker-config)
-      (worker/start (state/state-worker
-                      worker-config))
-      (worker/log-error-throw
-        (format "Control worker (%s) cannot determine leader publishing remote or not given." node-id)))
-    (worker/until-worker-terminate worker-config :control
-      ;; Control loop
-      (maybe-handle-message-from control-socket))
-    (log/trace "Control socket is preparing to exit.")
-    (doall (for [w '(:state :leader)]
-             (do (log/tracef "Control worker (%s) sending '%s' kill message using %s"
-                   node-id (name w) (kill-codes w))
-                 (worker/signal-terminate (kill-codes w)))))
-    (log/trace "Control worker exiting.")
-    :terminated))
+  (try
+    (with-open [control-socket (doto (zmq/socket socket/ctx :rep)
+                                 (zmq/bind control-binding))]
+      (log/trace "Control worker started.")
+      (if (leader/is-leader? worker-config)
+        (do (worker/start (leader/leader-worker
+                            worker-config))
+            (Thread/sleep 10)))
+      (if (leader/leader-remote worker-config)
+        (worker/start (state/state-worker
+                        worker-config))
+        (worker/log-error-throw
+          (format "Control worker (%s) cannot determine leader publishing remote or not given." node-id)))
+      (worker/until-worker-terminate worker-config :control
+        ;; Control loop
+        (maybe-handle-message-from control-socket))
+      (log/trace "Control socket is preparing to exit.")
+      (doall (for [w '(:state :leader)]
+               (do (log/tracef "Control worker (%s) sending '%s' kill message using %s"
+                     node-id (name w) (kill-codes w))
+                   (worker/signal-terminate (kill-codes w)))))
+      (log/trace "Control worker exiting.")
+      :terminated)
+    (catch Throwable e (clojure.stacktrace/print-stack-trace e))))
 

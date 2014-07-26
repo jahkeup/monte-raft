@@ -26,7 +26,8 @@
     conn-remote))
 
 (defn make-comm-sock
-  "Create a worker communication socket, refuses to create double sockets"
+  "Create a worker communication socket, refuses to create double
+  sockets. Useful for override a worker 'context'."
   [{:keys [node-id]}]
      (if comm-sock comm-sock
          (do (log/tracef "Worker creating new worker pub '%s'" (comm-remote node-id))
@@ -45,12 +46,13 @@
   `(do
      (let [worker-sub-name# (get-in ~worker-config [:kill-codes ~worker-type] ~worker-type)
            _# (log/tracef "Worker (%s) connecting to '%s' as worker comm"
-               (name worker-sub-name#) (comm-remote ~worker-config))
+                (name worker-sub-name#) (comm-remote ~worker-config))
            sock# (doto (zmq/socket socket/ctx :sub)
-                  (zmq/connect (comm-remote ~worker-config))
-                  (zmq/subscribe (name worker-sub-name#)))]
-      (log/tracef "Worker subscribing to '%s' for messages" (name worker-sub-name#))
-      (until-receive-from sock# ~@body))))
+                   (zmq/connect (comm-remote ~worker-config))
+                   (zmq/subscribe (name worker-sub-name#)))]
+       (log/tracef "Worker subscribing to '%s' for messages" (name worker-sub-name#))
+       (until-receive-from sock#
+         ~@body))))
 
 (defn comm-sock-logger [remote]
   (with-open [sock (doto (zmq/socket socket/ctx :sub)
@@ -66,14 +68,23 @@
   cause remote worker to cease looping."
   [worker-type msg]
   (if (not comm-sock) (throw (Exception. "Worker communication socket has not been opened.")))
-  (zmq/send-str comm-sock
-    (format "%s %s" (name worker-type) msg)))
+  (if (and worker-type msg)
+    (try
+      (zmq/send-str comm-sock
+        (format "%s %s" (name worker-type) msg))
+      (catch Throwable e (do (clojure.stacktrace/print-stack-trace e)
+                             (throw e))))
+    (throw (Exception. "Cannot send empty message with empty worker-type"))))
 
 (defmacro signal-terminate
   "Send a terminate message to subscribing worker-type"
   ([worker-type]
-     `(do (log/tracef "Sending terminate for '%s' workers" (name ~worker-type))
-          (send-message ~worker-type :terminate)))
+     `(try
+        (do (log/tracef "Sending terminate for '%s' workers" (name ~worker-type))
+            (send-message ~worker-type :terminate))
+        (catch Throwable e# (do (log/errorf "Error occurred during worker termination")
+                                (clojure.stacktrace/print-stack-trace e#)
+                                (throw e#)))))
   ([worker-type worker-config]
      `(signal-terminate (get-in ~worker-config [:kill-codes ~worker-type]
                           ~worker-type))))
