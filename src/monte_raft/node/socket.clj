@@ -78,7 +78,7 @@
   ([^ZMQ$Socket socket timeout send-str]
      (with-zmq-timeout socket timeout
        (if (or (msgs/valid-cmd? send-str) (msgs/valid-response? send-str))
-         (let [send-str (msgs/command-to-str send-str)]
+         (let [send-str (clojure.string/upper-case (msgs/command-to-str send-str))]
            (zmq/send-str socket send-str))
          (zmq/send-str socket send-str)))))
 
