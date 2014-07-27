@@ -13,7 +13,7 @@
 (defn clear-state! [state-map]
   (doall
     (for [[k resetval] [[:transient nil] [:current nil]
-                        [:term 0]]]
+                        [:term 0] [:confirmed false]]]
       (reset! (get state-map k) resetval))))
 
 (defmacro testing-clean-state [state desc & body]
@@ -42,7 +42,7 @@
 
 (deftest-worker test-control-reactions
   (let [{:keys [state node-id control-binding kill-codes] :as worker-config} (node-config)
-        {:keys [transient current term]} state
+        {:keys [transient current term confirmed]} state
         log-val (fn [desc x] (log/tracef "Current value of '%s': '%s'" desc x))
         started-chan (chan 1)
         running-worker (worker/start (control/control-worker worker-config
@@ -56,14 +56,53 @@
         (log/infof "Started control-worker (%s) for testing, will shutdown after.%s"
           (:control kill-codes) bar)
         (testing-clean-state state
-          "Control should respond with a confirm if transient state is present"
-          (reset! transient "some-state")
-          (if-let [response (send-recv-timeout sock "CONFIRM")]
-            (is (= (clojure.string/upper-case response) "CONFIRMED"))))
+          "Control confirms"
+          (let [proper-response "CONFIRMED"
+                inproper-response "UNCONFIRMED"]
+            (testing "when it has state"
+              (reset! transient "some-state")
+              (if-let [response (send-recv-timeout sock "CONFIRM")]
+                (is (= (clojure.string/upper-case response) "CONFIRMED") "confirms transient")))
+            (testing "but when it doesn't have state, unconfirmed."
+              (reset! transient nil)
+              (let [response (send-recv-timeout sock "CONFIRM")]
+                (is response "should have responded")
+                (is (= response inproper-response) "shouldn't be successful.")))))
         (testing-clean-state state
-          "Control should set current upon a COMMIT and respond"
-          (let [response (send-recv-timeout sock "COMMIT")]
-            (is (= (clojure.string/upper-case response) "COMMITTED"))))))
+          "Control should set current upon a COMMIT and"
+          (let [command "COMMIT"
+                proper-response "COMMITTED"
+                inproper-response "UNCOMMITTED"]
+            (testing-clean-state state
+              "without state"
+              (is (nil? @transient))
+              (is (false? @confirmed))
+              (let [response (send-recv-timeout sock command)]
+                (is (= response inproper-response))))
+            (testing-clean-state state
+              "with some state, not confirmed"
+              (reset! transient "some-state")
+              (is (false? @confirmed))
+              (let [response (send-recv-timeout sock command)]))
+            (testing "respond in proper state"
+              (reset! transient "some-state")
+              (reset! confirmed true)
+              (let [response (send-recv-timeout sock command)]
+                (is response "should have responded")
+                (is (= response proper-response))))))
+        (testing-clean-state state
+          "Control can respond to PING"
+          (let [command "PING" proper-response "PONG"]
+            (testing "with PONG"
+              (let [response (send-recv-timeout sock command)]
+                (is (= response proper-response) "responds correctly")))))
+        (comment (testing-clean-state state
+           "Control can respond to TERM"
+           (reset! term (inc (rand-int 10)))
+           (let [command "TERM"
+                 proper-response (format "TERM %s" term)]
+             (let [response (send-recv-timeout sock "TERM")]
+               (is (= response proper-response))))))))
     (worker/signal-terminate :control worker-config)
     (<!! running-worker)
     (log/infof "Test subject has been shutdown.%s" bar)))
