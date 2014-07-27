@@ -25,14 +25,14 @@
   (if (node-state/confirmable? state)
     (do (node-state/confirmed! state)
         (respond reply-sock :confirmed))
-    (respond reply-sock :resend)))
+    (respond reply-sock :unconfirmed)))
 
 (defn handle-commit
   "Handle COMMIT command" [reply-sock {:keys [state] :as config}]
   (if (node-state/confirmed? state)
     (do (node-state/commit! state)
         (respond reply-sock :committed))
-    (respond reply-sock :retry)))
+    (respond reply-sock :uncommitted)))
 
 
 (def cmd-handlers "Command handler mapping"

@@ -7,8 +7,8 @@
   [[:ping :pong]           ; Heartbeat
    [:elect :vote :novote]  ; Election
    [:follow :following]    ; Leadership change, instruct to follow
-   [:confirm :confirmed]   ; State Update: Confirm update
-   [:commit :committed]])  ; State Update: Commit last update
+   [:confirm :confirmed :unconfirmed]   ; State Update: Confirm update
+   [:commit :committed :uncommitted]])  ; State Update: Commit last update
 
 (defn to-command-fmt
   "Turn a message string into a normalized keyword"
