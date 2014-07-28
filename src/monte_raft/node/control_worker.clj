@@ -11,7 +11,7 @@
             [clojure.core.async :as async :refer [<!! >!! chan]]
             [zeromq.zmq :as zmq]))
 
-(defn handle-message
+(defn handle-simple-command
   "Inbound message dispatcher, msg should be raw message receieved
   from remotes"
   [reply-socket msg worker-config]
@@ -20,9 +20,15 @@
     (let [cmd (msgs/to-command-fmt msg)]
       (if (contains? handlers/cmd-handlers cmd)
         (let [handler-func (get handlers/cmd-handlers cmd)]
-          (handler-func reply-socket worker-config))))))
+          (handler-func reply-socket worker-config)
+          ::processed)
+        ::unprocessed))))
 
-(defn maybe-handle-message-from
+(defn handle-message [reply-sock msg worker-config]
+  (if (= ::unprocessed (handle-simple-command reply-sock msg worker-config))
+    (log/tracef "Control worker is handling complex command: '%s'" msg)))
+
+(defn maybe-handle-command-from
   "Handler delegation, dies on a timeout"
   [control-socket worker-config]
   (if-let [message (socket/receive-str-timeout control-socket)]
@@ -70,7 +76,7 @@
                (format "Control worker (%s) cannot determine leader publishing remote or not given." node-id)))
            (and started-chan (>!! started-chan :control))
            (worker/until-worker-terminate worker-config :control
-             (maybe-handle-message-from control-socket worker-config))
+             (maybe-handle-command-from control-socket worker-config))
            (log/trace "Control socket is preparing to exit.")))
        (catch Throwable e (do (clojure.stacktrace/print-cause-trace e)
                               (log/errorf "Control (%s) encountered a serious error." node-id)
