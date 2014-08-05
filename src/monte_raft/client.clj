@@ -70,7 +70,7 @@
 (defn start-nrepl
   "Start an nrepl server on port"
   ([]
-     (start-nrepl (inc (zmq/first-free-port))))
+     (start-nrepl 4343))
   ([port]
      (if (not @running-nrepl)
        (do
