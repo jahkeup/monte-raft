@@ -13,7 +13,8 @@
 (defn clear-state! [state-map]
   (doall
     (for [[k resetval] [[:transient nil] [:current nil]
-                        [:term 0] [:confirmed false]]]
+                        [:term 0] [:confirmed false]
+                        [:elected nil]]]
       (reset! (get state-map k) resetval))))
 
 (defmacro testing-clean-state [state desc & body]
@@ -102,7 +103,18 @@
           (let [command "TERM"
                 proper-response (format "TERM %s" @term)]
             (let [response (send-recv-timeout sock "TERM")]
-              (is (= response proper-response)))))))
+              (is (= response proper-response)))))
+        (testing-clean-state state
+          "Control can respond to ELECT :node-id"
+          (let [node :n1
+                command (format "ELECT %s" node)
+                proper-response "VOTE"]
+            (let [response (send-recv-timeout sock "ELECT :n1")]
+              (is (= response proper-response))
+              (is (= node @(get-in worker-config [:state :elected]))))
+            (let [response (send-recv-timeout sock "ELECT :some-other-node")]
+              (is (= response "NOVOTE"))
+              (is (= node @(get-in worker-config [:state :elected]))))))))
     (worker/signal-terminate :control worker-config)
     (<!! running-worker)
     (log/infof "Test subject has been shutdown.%s" bar)))

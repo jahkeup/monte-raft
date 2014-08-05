@@ -18,7 +18,10 @@
     (respond reply-sock response)))
 
 (defn handle-elect
-  "Handle ELECT command" [reply-sock _])
+  "Handle ELECT command" [reply-sock elect-node {:keys [state] :as config}]
+  (let [response (if @(:elected state) "NOVOTE"
+                     (do (reset! (:elected state) elect-node) "VOTE"))]
+    (respond reply-sock response)))
 
 (defn handle-confirm
   "Handle CONFIRM command" [reply-sock {:keys [state] :as config}]
@@ -43,6 +46,5 @@
 
 (def cmd-handlers "Command handler mapping"
   {:ping handle-ping
-   :elect handle-elect
    :confirm handle-confirm
    :commit handle-commit})

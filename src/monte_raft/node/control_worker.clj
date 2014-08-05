@@ -23,8 +23,12 @@
 
 (defn is-msg? [is-msg parts]
   (let [lmsg (clojure.string/lower-case (first parts))
-        lis-msg (clojure.string/lower-case (first parts))]
+        lis-msg (clojure.string/lower-case is-msg)]
     (= lis-msg lmsg)))
+
+(defn string-keyword [string]
+  (if string
+    (keyword (clojure.string/replace string #"^:" ""))))
 
 (defn handle-message [reply-sock msg worker-config]
   (if (= :unprocessed (handle-simple-command reply-sock msg worker-config))
@@ -33,8 +37,11 @@
       (cond
         (is-msg? "TERM" msg-parts)
         (if (= 2 (count msg-parts))
-          (handlers/handle-term reply-sock (last msg-parts) worker-config)
-          (handlers/handle-term reply-sock worker-config))))))
+          (handlers/handle-term reply-sock (long (get msg-parts 1)) worker-config)
+          (handlers/handle-term reply-sock worker-config))
+
+        (is-msg? "ELECT" msg-parts)
+        (handlers/handle-elect reply-sock (string-keyword (get msg-parts 1)) worker-config)))))
 
 (defn maybe-handle-command-from
   "Handler delegation, dies on a timeout"

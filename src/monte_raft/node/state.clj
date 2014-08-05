@@ -17,10 +17,12 @@
 
    ;; Node state objects.
    :state
-   {:transient (atom nil)
-    :current (atom nil)
-    :term (atom 0)
-    :confirmed (atom false)}
+   {:transient (atom nil)   ; Interim state, not yet confirmed
+    :current (atom nil)     ; Cluster represented state
+    :term (atom 0)          ; Current term
+    :confirmed (atom false) ; Has the transient state been confirmed
+    :elected (atom nil)     ; The elected node id if we have elected.
+    }
 
    :kill-codes
    {:control (keyword (format "%s-control-worker" id))
