@@ -41,7 +41,8 @@
           (handlers/handle-term reply-sock worker-config))
 
         (is-msg? "ELECT" msg-parts)
-        (handlers/handle-elect reply-sock (string-keyword (get msg-parts 1)) worker-config)))))
+        (handlers/handle-elect reply-sock (string-keyword (get msg-parts 1)) worker-config)
+        :default (handlers/handle-unknown-message reply-sock)))))
 
 (defn maybe-handle-command-from
   "Handler delegation, dies on a timeout"

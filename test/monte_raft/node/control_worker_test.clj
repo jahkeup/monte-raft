@@ -57,6 +57,12 @@
         (log/infof "Started control-worker (%s) for testing, will shutdown after.%s"
           (:control kill-codes) bar)
         (testing-clean-state state
+          "Control can handle invalid messages"
+          (let [proper-response "BAD COMMAND"
+                command "GIVE ME THE ANSWER!"]
+            (let [response (send-recv-timeout sock command)]
+              (is (= proper-response response)))))
+        (testing-clean-state state
           "Control confirms"
           (let [proper-response "CONFIRMED"
                 inproper-response "UNCONFIRMED"]

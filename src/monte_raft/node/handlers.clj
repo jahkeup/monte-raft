@@ -44,6 +44,9 @@
   ([reply-sock new-term {:keys [state] :as config}]
      (respond reply-sock (str "TERM " (reset! (:term state) new-term)))))
 
+(defn handle-unknown-message [reply-sock]
+  (respond reply-sock "BAD COMMAND"))
+
 (def cmd-handlers "Command handler mapping"
   {:ping handle-ping
    :confirm handle-confirm
