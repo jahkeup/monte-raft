@@ -34,6 +34,12 @@
         (respond reply-sock :committed))
     (respond reply-sock :uncommitted)))
 
+(defn handle-term
+  "Handle TERM command"
+  ([reply-sock {:keys [state] :as config}]
+     (respond reply-sock (str "TERM " @(:term state))))
+  ([reply-sock new-term {:keys [state] :as config}]
+     (respond reply-sock (str "TERM " (reset! (:term state) new-term)))))
 
 (def cmd-handlers "Command handler mapping"
   {:ping handle-ping

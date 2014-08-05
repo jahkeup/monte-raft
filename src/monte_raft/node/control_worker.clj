@@ -16,17 +16,25 @@
   from remotes"
   [reply-socket msg worker-config]
   (log/tracef "Handling message: '%s'" msg)
-  (if (msgs/valid-cmd? msg)
-    (let [cmd (msgs/to-command-fmt msg)]
-      (if (contains? handlers/cmd-handlers cmd)
-        (let [handler-func (get handlers/cmd-handlers cmd)]
-          (handler-func reply-socket worker-config)
-          ::processed)
-        ::unprocessed))))
+  (if-let [handler-func (and (msgs/valid-cmd? msg)
+                          (get handlers/cmd-handlers (msgs/to-command-fmt msg)))]
+    (do (handler-func reply-socket worker-config) :processed)
+    :unprocessed))
+
+(defn is-msg? [is-msg parts]
+  (let [lmsg (clojure.string/lower-case (first parts))
+        lis-msg (clojure.string/lower-case (first parts))]
+    (= lis-msg lmsg)))
 
 (defn handle-message [reply-sock msg worker-config]
-  (if (= ::unprocessed (handle-simple-command reply-sock msg worker-config))
-    (log/tracef "Control worker is handling complex command: '%s'" msg)))
+  (if (= :unprocessed (handle-simple-command reply-sock msg worker-config))
+    (let [msg-parts (clojure.string/split msg #"\s+")]
+      (log/tracef "Control worker is handling complex command: '%s'" msg)
+      (cond
+        (is-msg? "TERM" msg-parts)
+        (if (= 2 (count msg-parts))
+          (handlers/handle-term reply-sock (last msg-parts) worker-config)
+          (handlers/handle-term reply-sock worker-config))))))
 
 (defn maybe-handle-command-from
   "Handler delegation, dies on a timeout"

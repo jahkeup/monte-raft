@@ -96,13 +96,13 @@
             (testing "with PONG"
               (let [response (send-recv-timeout sock command)]
                 (is (= response proper-response) "responds correctly")))))
-        (comment (testing-clean-state state
-           "Control can respond to TERM"
-           (reset! term (inc (rand-int 10)))
-           (let [command "TERM"
-                 proper-response (format "TERM %s" term)]
-             (let [response (send-recv-timeout sock "TERM")]
-               (is (= response proper-response))))))))
+        (testing-clean-state state
+          "Control can respond to TERM"
+          (reset! term (inc (rand-int 10)))
+          (let [command "TERM"
+                proper-response (format "TERM %s" @term)]
+            (let [response (send-recv-timeout sock "TERM")]
+              (is (= response proper-response)))))))
     (worker/signal-terminate :control worker-config)
     (<!! running-worker)
     (log/infof "Test subject has been shutdown.%s" bar)))
