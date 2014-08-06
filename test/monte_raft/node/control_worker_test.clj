@@ -120,7 +120,15 @@
               (is (= node @(get-in worker-config [:state :elected]))))
             (let [response (send-recv-timeout sock "ELECT :some-other-node")]
               (is (= response "NOVOTE"))
-              (is (= node @(get-in worker-config [:state :elected]))))))))
+              (is (= node @(get-in worker-config [:state :elected]))))))
+        (testing-clean-state state
+          "Control can change leaders properly"
+          (let [node :test-node
+                command (format "FOLLOW %s" node)
+                proper-response (format "FOLLOWING %s" node)]
+            (let [response (send-recv-timeout sock command)]
+              (is (= response proper-response))
+              (is (= node @(get-in worker-config [:state :leader-id]))))))))
     (worker/signal-terminate :control worker-config)
     (<!! running-worker)
     (log/infof "Test subject has been shutdown.%s" bar)))

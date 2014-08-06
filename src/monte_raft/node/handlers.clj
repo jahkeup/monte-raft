@@ -23,6 +23,14 @@
                      (do (reset! (:elected state) elect-node) "VOTE"))]
     (respond reply-sock response)))
 
+(defn handle-follow
+  "Handle FOLLOW command"
+  [reply-sock new-leader-id {:keys [state] :as config}]
+  (if (contains? @node-state/cluster new-leader-id)
+    (do (reset! (:leader-id state) new-leader-id)
+        (respond reply-sock (format "FOLLOWING %s" new-leader-id)))
+    (respond reply-sock "INVALID NODE ID")))
+
 (defn handle-confirm
   "Handle CONFIRM command" [reply-sock {:keys [state] :as config}]
   (if (node-state/confirmable? state)
