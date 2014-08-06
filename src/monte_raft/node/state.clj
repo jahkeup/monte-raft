@@ -22,6 +22,7 @@
     :term (atom 0)          ; Current term
     :confirmed (atom false) ; Has the transient state been confirmed
     :elected (atom nil)     ; The elected node id if we have elected.
+    :leader-id (atom nil)
     }
 
    :kill-codes

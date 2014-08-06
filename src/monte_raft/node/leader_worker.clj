@@ -14,13 +14,13 @@
   (if-let [id (if (not (map? id-or-config)) id-or-config)]
     (get-in @node-state/cluster [(keyword id) :publish-binding])
     (let [config id-or-config
-          leader-id (:leader-id config)]
+          leader-id @(get-in config [:state :leader-id])]
       (get-in @node-state/cluster [leader-id :publish-binding]))))
 
 (defn is-leader?
   "Is the other-node the same as the leader process?"
-  [config-map]
-  (= (:leader-id config-map) (:node-id config-map)))
+  [config]
+  (= (:node-id config) @(get-in config [:state :leader-id])))
 
 (defn publish-state [publisher state-str]
   (zmq/send-str publisher state-str))
@@ -31,9 +31,9 @@
   sub-worker"
   ([worker-config]
      (leader-worker worker-config nil))
-  ([{:keys [node-id leader-id publish-binding] :as worker-config} started-chan]
+  ([{:keys [node-id state publish-binding] :as worker-config} started-chan]
      (log/tracef "Starting leader ('%s') sending state updates on '%s'."
-       leader-id publish-binding)
+       @(:leader-id state) publish-binding)
      (try
        (with-open [state-publisher (doto (zmq/socket socket/ctx :pub)
                                      (zmq/bind publish-binding))]

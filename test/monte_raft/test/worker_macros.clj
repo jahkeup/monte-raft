@@ -11,8 +11,9 @@
 
 (defmacro binding-with-default-cluster [node-id leader-id & body]
   `(with-redefs
-     [node-state/cluster (atom (assoc-in (node-state/-make-node-cluster-map '(~node-id))
-                                 [(keyword ~node-id) :leader-id] (keyword ~leader-id)))]
+     [node-state/cluster
+      (atom (assoc-in (node-state/-make-node-cluster-map '(~node-id))
+              [(keyword ~node-id) :state :leader-id] (atom (keyword ~leader-id))))]
      (worker/with-comm-sock (node-config)
        ~@body)))
 

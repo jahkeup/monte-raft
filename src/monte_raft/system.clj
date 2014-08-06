@@ -21,7 +21,8 @@
 
 (defn set-leader "Return cluster-map with leader-id (initial) set."
   [cluster-map leader-id]
-  (update-values cluster-map #(assoc % :leader-id (keyword leader-id))))
+  (update-values cluster-map
+    #(assoc-in % [:state :leader-id] (atom (keyword leader-id)))))
 
 (defn config-random-leader [cluster-map]
   (let [rand-leader (:node-id (random-node cluster-map))]
@@ -62,11 +63,11 @@
         (doall (for [node-id (keys cluster-nodes)]
                  (let [node-config (node-id cluster-nodes)]
                    (log/infof "System starting node %s" node-id)
-                   (save-worker! node-id (worker/start (node/node node-config)))))))
-      (log/infof "System has started all nodes from config:\n%s"
-        (with-out-str (clojure.pprint/pprint @node-state/cluster)))
-      (worker/until-worker-terminate cluster-config :system
-        (Thread/sleep 1000))
+                   (save-worker! node-id (worker/start (node/node node-config))))))
+        (log/debugf "System has started all nodes from config:\n%s"
+          (with-out-str (clojure.pprint/pprint @node-state/cluster)))
+        (worker/until-worker-terminate cluster-config :system
+          (Thread/sleep 1000)))
       (catch Throwable e (clojure.stacktrace/print-cause-trace e))
       (finally (do (stop-system-nodes)
                    (client/stop-nrepl)))))
