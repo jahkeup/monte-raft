@@ -14,10 +14,9 @@
             [taoensso.timbre :as log]))
 
 (deftest-node test-node-starts
-  (log/with-log-level :trace
-    (let [running-node (worker/start
-                        (node/node (node-config)))]
-     (wait-do 1000
-       (worker/signal-terminate (get-in (node-config) [:kill-codes :control]))
-       (is (= (<!! running-node) :terminated))))))
+  (let [running-node (worker/start
+                       (node/node (node-config)))]
+    (wait-do 1000
+      (worker/signal-terminate (get-in (node-config) [:kill-codes :control]))
+      (is (= (<!! running-node) :terminated)))))
 
