@@ -111,3 +111,19 @@
   [& worker-call]
   `(go ~@worker-call))
 
+(defn min-quorum
+  "Returns minimum for quorum for x (int)"
+  [x]
+  (inc (long (/ x 2))))
+
+(defn quorum?
+  "Does x meet the quorum minimum? For the nodes in the cluster if mx
+  not given."
+  ([x]
+     (let [mx (count (keys @node-state/cluster))]
+       (quorum? x mx)))
+  ([x mx]
+     (let [q (min-quorum mx)]
+       (and (>= x q) (<= x mx)))))
+
+(quorum? 8 15)
