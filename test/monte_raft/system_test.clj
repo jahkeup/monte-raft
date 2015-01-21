@@ -5,7 +5,6 @@
             [monte-raft.system :as system]
             [monte-raft.node.worker :as worker]))
 
-
 (deftest test-cluster-simple-start
   (testing "Cluster basically* starts."
     (let [cluster-config {:node-id :cluster}]

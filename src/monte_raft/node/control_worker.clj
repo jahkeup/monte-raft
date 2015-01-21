@@ -120,8 +120,9 @@
            ;; thing for the leader, if there's been a change just kill
            ;; them and start them again. I will need to ensure that
            ;; they've actually exited though..
-           (worker/until-worker-terminate worker-config :control
-             (maybe-handle-command-from control-socket worker-config))
+           (let [worker-config (assoc-in worker-config [:state :votes] (atom 0))]
+             (worker/until-worker-terminate worker-config :control
+                     (maybe-handle-command-from control-socket worker-config)))
            (log/trace "Control socket is preparing to exit.")))
        (catch Throwable e (do (clojure.stacktrace/print-cause-trace e)
                               (log/errorf "Control (%s) encountered a serious error." node-id)

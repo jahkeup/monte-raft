@@ -132,4 +132,3 @@
     (worker/signal-terminate :control worker-config)
     (<!! running-worker)
     (log/infof "Test subject has been shutdown.%s" bar)))
-
